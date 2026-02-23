@@ -22,9 +22,10 @@ type DashboardChartsProps = {
 };
 
 const PIE_COLORS = ['#4f772d', '#cbd5e1'];
+const SUMMARY_COLORS = ['#4f772d', '#6f9f42', '#f4a259', '#3f3f46'];
 
 export function DashboardCharts({ data }: DashboardChartsProps) {
-  const pieData = [
+  const activityPieData = [
     { name: 'Completed', value: data.completion.completed },
     { name: 'Missed', value: data.completion.missed }
   ];
@@ -37,8 +38,8 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
           <div className="mt-2 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={100}>
-                  {pieData.map((entry, index) => (
+                <Pie data={activityPieData} dataKey="value" nameKey="name" outerRadius={100}>
+                  {activityPieData.map((entry, index) => (
                     <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
@@ -50,7 +51,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </article>
 
         <article className="rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Food Diversity per Day</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Meal Diversity per Day</h2>
           <div className="mt-2 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.foodDiversity}>
@@ -80,34 +81,107 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
       </article>
 
-      <article className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Language Exposure Minutes</h2>
-        <div className="mt-2 h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.languageTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="minutes" type="monotone" stroke="#4f772d" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </article>
+      <section className="grid gap-4 md:grid-cols-2">
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Language Exposure Minutes</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.languageTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line dataKey="minutes" type="monotone" stroke="#4f772d" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Motor Exposure Minutes</h2>
-        <div className="mt-2 h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.motorTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="minutes" type="monotone" stroke="#f4a259" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Motor Exposure Minutes</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.motorTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line dataKey="minutes" type="monotone" stroke="#f4a259" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Meals Logged (Yes) Per Day</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.mealCompletionTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis allowDecimals={false} domain={[0, 3]} />
+                <Tooltip />
+                <Bar dataKey="meals" fill="#6f9f42" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Medicines & Care Summary (14 days)</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.medicineSummary}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value">
+                  {data.medicineSummary.map((entry, index) => (
+                    <Cell key={entry.label} fill={SUMMARY_COLORS[index % SUMMARY_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Care Activities Count Per Day</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.careTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis allowDecimals={false} domain={[0, 4]} />
+                <Tooltip />
+                <Line dataKey="careCount" type="monotone" stroke="#3f3f46" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Nap Minutes and Nap Count</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.napTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis yAxisId="minutes" />
+                <YAxis yAxisId="naps" orientation="right" allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Line yAxisId="minutes" dataKey="totalMinutes" type="monotone" stroke="#4f772d" strokeWidth={3} />
+                <Line yAxisId="naps" dataKey="naps" type="monotone" stroke="#f4a259" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
       </section>
     </div>
   );

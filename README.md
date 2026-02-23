@@ -1,6 +1,6 @@
 # Ahana Development Tracker
 
-Mobile-first public tracker for a 14-month-old child's daily development activities and food intake.
+Mobile-first public tracker for a 14-month-old child. Primary workflow is tap/select only for nanny usage.
 
 ## Tech Stack
 
@@ -9,42 +9,52 @@ Mobile-first public tracker for a 14-month-old child's daily development activit
 - Charts: Recharts
 - Deploy target: Vercel
 
-## Features
+## Current Features
 
-- No-login, public access flow
-- Tap-first nanny workflow (no typing required)
-- Daily checklist grouped by activity category
-- Activity fields: completion, rating, duration
-- Food group tap selectors with `New food` and `Packaged` toggles
-- Sugar warning for packaged sugar-related groups
-- Auto daily reset by date-based logs
-- Daily completion percentage and weekly streak
-- Alerts:
-  - No outdoor activity for 3 consecutive days
-  - No language activity above 15 minutes for 3 consecutive days
-- Parent dashboard (`/dashboard`) with:
-  - Pie: completed vs missed activities (last 7 days)
-  - Bar: minutes by skill tag (last 7 days)
-  - Line: language exposure minutes over time (last 14 days)
-  - Bar: food diversity count by day (last 14 days)
-  - Motor exposure trend line
+- No login required (public link access)
+- Home screen split into tabs:
+  - Development Activities
+  - Food & Nutrition
+  - Medicines & Care
+  - Nap Times
+- Weekday activity planner (Mon-Fri): one activity per category shown each day
+- Food & Nutrition tracking:
+  - Breakfast / Lunch / Evening snacks
+  - Yes/No + quantity (Low, Normal, High)
+- Medicines & Care tracking:
+  - Iron drops (Yes/No)
+  - Multivitamin drops (Yes/No)
+  - If medicine given: Vitamin C fruit question + fruit picker
+  - Bathing (Yes/No + duration window)
+- Nap tracking:
+  - Add nap with plus button
+  - Start time + either end time or duration
+- Home insights:
+  - Daily development completion %
+  - Weekly streak
+  - Alerts for outdoor/language consistency
+- Parent dashboard at `/dashboard` with charts
 
 ## Project Structure
 
 ```text
 app/
   api/
+    care-log/route.ts
     daily-log/route.ts
-    food-log/route.ts
+    nap-log/route.ts
+    nutrition-log/route.ts
   dashboard/page.tsx
   globals.css
   layout.tsx
   page.tsx
 components/
   ActivityCard.tsx
+  CareSection.tsx
   DashboardCharts.tsx
-  FoodSelector.tsx
   HomeClient.tsx
+  NapSection.tsx
+  NutritionSection.tsx
 lib/
   constants.ts
   data.ts
@@ -56,6 +66,7 @@ lib/
 supabase/
   migrations/
     202602230001_init_ahana_tracker.sql
+    202602230002_home_tabs_and_care.sql
 ```
 
 ## Local Setup
@@ -66,13 +77,7 @@ supabase/
 npm install
 ```
 
-2. Create local env file:
-
-```bash
-cp .env.example .env.local
-```
-
-3. Fill `.env.local`:
+2. Create `.env.local` (or copy `.env.example`) and set:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
@@ -80,7 +85,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
-4. Run dev server:
+3. Run:
 
 ```bash
 npm run dev
@@ -90,18 +95,17 @@ Open `http://localhost:3000`.
 
 ## Supabase Setup
 
-1. Create a new Supabase project.
-2. Go to SQL Editor.
-3. Run the migration file contents from:
+1. Create Supabase project.
+2. Open SQL Editor.
+3. Run these migrations in order:
    - `supabase/migrations/202602230001_init_ahana_tracker.sql`
-
-This creates tables, constraints, RLS policies, and seeds the required activities.
+   - `supabase/migrations/202602230002_home_tabs_and_care.sql`
 
 ## Deployment (Vercel)
 
-1. Push repo to GitHub/GitLab/Bitbucket.
+1. Push repository to GitHub/GitLab/Bitbucket.
 2. Import project in Vercel.
-3. Add environment variables in Vercel Project Settings:
+3. Add env vars in Vercel Project Settings:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -109,10 +113,9 @@ This creates tables, constraints, RLS policies, and seeds the required activitie
 
 ## Notes
 
-- The app is intentionally public and does not require auth.
-- `daily_logs` and `food_logs` use date-based uniqueness to support safe upserts.
 - Duration analytics mapping:
-  - `0 to 5` = 5
-  - `5 to 10` = 10
-  - `10 to 20` = 20
-  - `20 plus` = 25
+  - `0 to 5` = 5 minutes
+  - `5 to 10` = 10 minutes
+  - `10 to 20` = 20 minutes
+  - `20 plus` = 25 minutes
+- Rotate exposed secrets if they were shared in chat/history.

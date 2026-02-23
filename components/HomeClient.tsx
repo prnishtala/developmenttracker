@@ -1,28 +1,71 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { parseISO } from 'date-fns';
 import { ActivityCard } from '@/components/ActivityCard';
-import { FoodSelector } from '@/components/FoodSelector';
-import { ActivityWithLog, FoodLog, HomeInsights } from '@/lib/types';
+import { CareSection } from '@/components/CareSection';
+import { NapSection } from '@/components/NapSection';
+import { NutritionSection } from '@/components/NutritionSection';
+import { ActivityWithLog, CareLog, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 
 type HomeClientProps = {
   date: string;
   initialActivities: ActivityWithLog[];
-  initialFoods: FoodLog[];
+  initialNutritionLogs: NutritionLog[];
+  initialCareLog: CareLog | null;
+  initialNapLogs: NapLog[];
   insights: HomeInsights;
 };
 
-export function HomeClient({ date, initialActivities, initialFoods, insights }: HomeClientProps) {
+type TabKey = 'development' | 'nutrition' | 'care' | 'naps';
+
+const TAB_LABELS: Record<TabKey, string> = {
+  development: 'Development Activities',
+  nutrition: 'Food & Nutrition',
+  care: 'Medicines & Care',
+  naps: 'Nap Times'
+};
+
+function defaultCareLog(date: string): CareLog {
+  return {
+    id: '',
+    date,
+    iron_drops: false,
+    multivitamin_drops: false,
+    vitamin_c_given: false,
+    vitamin_c_fruit: null,
+    bath_completed: false,
+    bath_duration: null
+  };
+}
+
+function isWeekend(date: string): boolean {
+  const day = parseISO(date).getDay();
+  return day === 0 || day === 6;
+}
+
+export function HomeClient({
+  date,
+  initialActivities,
+  initialNutritionLogs,
+  initialCareLog,
+  initialNapLogs,
+  insights
+}: HomeClientProps) {
+  const [activeTab, setActiveTab] = useState<TabKey>('development');
   const [activities, setActivities] = useState(initialActivities);
-  const [foods, setFoods] = useState(initialFoods);
+  const [nutritionLogs, setNutritionLogs] = useState(initialNutritionLogs);
+  const [careLog, setCareLog] = useState(initialCareLog ?? defaultCareLog(date));
+  const [napLogs, setNapLogs] = useState(initialNapLogs);
   const [isPending, startTransition] = useTransition();
+
   const completionPercentage = useMemo(() => {
     if (!activities.length) return 0;
     const completed = activities.filter((activity) => activity.log?.completed).length;
     return Math.round((completed / activities.length) * 100);
   }, [activities]);
 
-  const grouped = useMemo(() => {
+  const groupedActivities = useMemo(() => {
     return activities.reduce<Record<string, ActivityWithLog[]>>((acc, activity) => {
       acc[activity.category] = acc[activity.category] ?? [];
       acc[activity.category].push(activity);
@@ -82,50 +125,155 @@ export function HomeClient({ date, initialActivities, initialFoods, insights }: 
     });
   }
 
-  async function upsertFoodLog(payload: {
-    foodGroup: string;
-    selected: boolean;
-    newFood: boolean;
-    packaged: boolean;
-  }) {
-    const previous = foods;
+  async function upsertNutritionLog(payload: { mealType: string; hadMeal: boolean; quantity: string | null }) {
+    const previous = nutritionLogs;
 
-    setFoods((current) => {
-      if (!payload.selected) {
-        return current.filter((item) => item.food_group !== payload.foodGroup);
-      }
-
-      const existing = current.find((item) => item.food_group === payload.foodGroup);
+    setNutritionLogs((current) => {
+      const existing = current.find((item) => item.meal_type === payload.mealType);
       if (!existing) {
         return [
           ...current,
           {
             id: '',
             date,
-            food_group: payload.foodGroup,
-            new_food: payload.newFood,
-            packaged: payload.packaged
+            meal_type: payload.mealType,
+            had_meal: payload.hadMeal,
+            quantity: payload.quantity
           }
         ];
       }
-
       return current.map((item) =>
-        item.food_group === payload.foodGroup
-          ? { ...item, new_food: payload.newFood, packaged: payload.packaged }
+        item.meal_type === payload.mealType
+          ? { ...item, had_meal: payload.hadMeal, quantity: payload.quantity }
           : item
       );
     });
 
     startTransition(async () => {
       try {
-        const res = await fetch('/api/food-log', {
+        const res = await fetch('/api/nutrition-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ date, ...payload })
         });
-        if (!res.ok) throw new Error('Unable to save food log');
+        if (!res.ok) throw new Error('Unable to save nutrition log');
       } catch {
-        setFoods(previous);
+        setNutritionLogs(previous);
+      }
+    });
+  }
+
+  async function upsertCareLog(changes: Partial<CareLog>) {
+    const previous = careLog;
+    const next = { ...careLog, ...changes };
+
+    if (!next.iron_drops && !next.multivitamin_drops) {
+      next.vitamin_c_given = false;
+      next.vitamin_c_fruit = null;
+    }
+
+    setCareLog(next);
+
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/care-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date,
+            ironDrops: next.iron_drops,
+            multivitaminDrops: next.multivitamin_drops,
+            vitaminCGiven: next.vitamin_c_given,
+            vitaminCFruit: next.vitamin_c_fruit,
+            bathCompleted: next.bath_completed,
+            bathDuration: next.bath_duration
+          })
+        });
+        if (!res.ok) throw new Error('Unable to save care log');
+      } catch {
+        setCareLog(previous);
+      }
+    });
+  }
+
+  async function addNap() {
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/nap-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            date,
+            startTime: '12:00',
+            entryMode: 'duration',
+            durationMinutes: 60,
+            endTime: null
+          })
+        });
+        if (!res.ok) throw new Error('Unable to create nap');
+        const payload = await res.json();
+        const nap = payload.nap as NapLog;
+        setNapLogs((current) => [
+          ...current,
+          {
+            ...nap,
+            start_time: nap.start_time.slice(0, 5),
+            end_time: nap.end_time ? nap.end_time.slice(0, 5) : null
+          }
+        ]);
+      } catch {
+        // no-op
+      }
+    });
+  }
+
+  async function updateNap(napId: string, changes: Partial<NapLog>) {
+    const previous = napLogs;
+
+    setNapLogs((current) => current.map((nap) => (nap.id === napId ? { ...nap, ...changes } : nap)));
+
+    const updatedNap = napLogs.find((nap) => nap.id === napId);
+    if (!updatedNap) return;
+
+    const merged = { ...updatedNap, ...changes };
+
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/nap-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            id: napId,
+            date,
+            startTime: merged.start_time,
+            endTime: merged.entry_mode === 'end_time' ? merged.end_time : null,
+            durationMinutes: merged.entry_mode === 'duration' ? merged.duration_minutes : null,
+            entryMode: merged.entry_mode
+          })
+        });
+        if (!res.ok) throw new Error('Unable to update nap');
+      } catch {
+        setNapLogs(previous);
+      }
+    });
+  }
+
+  async function deleteNap(napId: string) {
+    const previous = napLogs;
+    setNapLogs((current) => current.filter((nap) => nap.id !== napId));
+
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/nap-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', id: napId })
+        });
+        if (!res.ok) throw new Error('Unable to delete nap');
+      } catch {
+        setNapLogs(previous);
       }
     });
   }
@@ -137,7 +285,7 @@ export function HomeClient({ date, initialActivities, initialFoods, insights }: 
         <p className="mt-1 text-sm opacity-90">Daily checklist for {date}</p>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-white/20 p-3">
-            <p className="text-xs uppercase">Completion</p>
+            <p className="text-xs uppercase">Development completion</p>
             <p className="text-2xl font-bold">{completionPercentage}%</p>
           </div>
           <div className="rounded-xl bg-white/20 p-3">
@@ -159,20 +307,49 @@ export function HomeClient({ date, initialActivities, initialFoods, insights }: 
         </p>
       )}
 
-      <section className="space-y-4">
-        {Object.entries(grouped).map(([category, items]) => (
-          <div key={category} className="space-y-2">
-            <h2 className="text-lg font-semibold text-slate-900">{category}</h2>
-            <div className="space-y-2">
-              {items.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} onChange={upsertDailyLog} />
-              ))}
-            </div>
-          </div>
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {(Object.keys(TAB_LABELS) as TabKey[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`h-12 rounded-xl px-3 text-sm font-semibold ${
+              activeTab === tab ? 'bg-brand-500 text-white' : 'bg-white text-slate-700 shadow-sm'
+            }`}
+          >
+            {TAB_LABELS[tab]}
+          </button>
         ))}
       </section>
 
-      <FoodSelector foods={foods} onChange={upsertFoodLog} />
+      {activeTab === 'development' && (
+        <section className="space-y-4">
+          {isWeekend(date) && (
+            <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
+              Weekday schedule is set for Monday to Friday. No planned development activities for weekends.
+            </p>
+          )}
+          {Object.entries(groupedActivities).map(([category, items]) => (
+            <div key={category} className="space-y-2">
+              <h2 className="text-lg font-semibold text-slate-900">{category}</h2>
+              <div className="space-y-2">
+                {items.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} onChange={upsertDailyLog} />
+                ))}
+              </div>
+            </div>
+          ))}
+          {!isWeekend(date) && activities.length === 0 && (
+            <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700">No activities available.</p>
+          )}
+        </section>
+      )}
+
+      {activeTab === 'nutrition' && <NutritionSection logs={nutritionLogs} onChange={upsertNutritionLog} />}
+
+      {activeTab === 'care' && <CareSection log={careLog} onChange={upsertCareLog} />}
+
+      {activeTab === 'naps' && <NapSection naps={napLogs} onAdd={addNap} onUpdate={updateNap} onDelete={deleteNap} />}
 
       {isPending && <p className="text-center text-xs text-slate-500">Saving...</p>}
     </div>
