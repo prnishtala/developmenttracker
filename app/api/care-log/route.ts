@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequestMeta, writeAuditLog } from '@/lib/audit';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -19,22 +20,33 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getServiceSupabaseClient();
+    const requestMeta = getRequestMeta(request);
+    const normalizedPayload = {
+      date,
+      iron_drops: ironDrops,
+      multivitamin_drops: multivitaminDrops,
+      vitamin_c_given: vitaminCGiven && (ironDrops || multivitaminDrops),
+      vitamin_c_fruit: vitaminCGiven && (ironDrops || multivitaminDrops) ? vitaminCFruit : null,
+      bath_completed: bathCompleted,
+      bath_duration: bathCompleted ? bathDuration : null
+    };
     const { error } = await supabase.from('care_logs').upsert(
-      {
-        date,
-        iron_drops: ironDrops,
-        multivitamin_drops: multivitaminDrops,
-        vitamin_c_given: vitaminCGiven && (ironDrops || multivitaminDrops),
-        vitamin_c_fruit: vitaminCGiven && (ironDrops || multivitaminDrops) ? vitaminCFruit : null,
-        bath_completed: bathCompleted,
-        bath_duration: bathCompleted ? bathDuration : null
-      },
+      normalizedPayload,
       { onConflict: 'date' }
     );
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    await writeAuditLog(supabase, requestMeta, {
+      eventType: 'care_log',
+      action: 'upsert',
+      entityType: 'care_logs',
+      entityId: date,
+      eventDate: date,
+      payload: normalizedPayload
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

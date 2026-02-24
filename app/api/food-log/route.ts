@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequestMeta, writeAuditLog } from '@/lib/audit';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getServiceSupabaseClient();
+    const requestMeta = getRequestMeta(request);
 
     if (!selected) {
       const { error } = await supabase
@@ -28,6 +30,15 @@ export async function POST(request: NextRequest) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+
+      await writeAuditLog(supabase, requestMeta, {
+        eventType: 'food_log',
+        action: 'delete',
+        entityType: 'food_logs',
+        entityId: foodGroup,
+        eventDate: date,
+        payload: { selected: false }
+      });
 
       return NextResponse.json({ ok: true });
     }
@@ -45,6 +56,15 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    await writeAuditLog(supabase, requestMeta, {
+      eventType: 'food_log',
+      action: 'upsert',
+      entityType: 'food_logs',
+      entityId: foodGroup,
+      eventDate: date,
+      payload: { selected: true, newFood, packaged }
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

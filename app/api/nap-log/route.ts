@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequestMeta, writeAuditLog } from '@/lib/audit';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest) {
     };
 
     const supabase = getServiceSupabaseClient();
+    const requestMeta = getRequestMeta(request);
 
     if (action === 'delete') {
       if (!id) {
@@ -23,6 +25,14 @@ export async function POST(request: NextRequest) {
 
       const { error } = await supabase.from('nap_logs').delete().eq('id', id);
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      await writeAuditLog(supabase, requestMeta, {
+        eventType: 'nap_log',
+        action: 'delete',
+        entityType: 'nap_logs',
+        entityId: id
+      });
+
       return NextResponse.json({ ok: true });
     }
 
@@ -41,6 +51,16 @@ export async function POST(request: NextRequest) {
     if (action === 'create') {
       const { data, error } = await supabase.from('nap_logs').insert(payload).select().single();
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      await writeAuditLog(supabase, requestMeta, {
+        eventType: 'nap_log',
+        action: 'create',
+        entityType: 'nap_logs',
+        entityId: data.id,
+        eventDate: date,
+        payload
+      });
+
       return NextResponse.json({ ok: true, nap: data });
     }
 
@@ -50,6 +70,15 @@ export async function POST(request: NextRequest) {
 
     const { error } = await supabase.from('nap_logs').update(payload).eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await writeAuditLog(supabase, requestMeta, {
+      eventType: 'nap_log',
+      action: 'update',
+      entityType: 'nap_logs',
+      entityId: id,
+      eventDate: date,
+      payload
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

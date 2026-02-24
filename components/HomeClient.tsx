@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { parseISO } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ActivityCard } from '@/components/ActivityCard';
@@ -24,6 +24,14 @@ type HomeClientProps = {
 
 type TabKey = 'development' | 'nutrition' | 'care' | 'naps';
 
+type PendingMutation = {
+  id: string;
+  kind: 'generic' | 'nap-create' | 'nap-update' | 'nap-delete';
+  endpoint: string;
+  body: Record<string, unknown>;
+  tempNapId?: string;
+};
+
 const TAB_LABELS: Record<TabKey, string> = {
   development: 'Development Activities',
   nutrition: 'Food & Nutrition',
@@ -31,10 +39,12 @@ const TAB_LABELS: Record<TabKey, string> = {
   naps: 'Nap Times'
 };
 
-function defaultCareLog(date: string): CareLog {
+const PENDING_MUTATIONS_KEY = 'ahana-pending-mutations-v1';
+
+function defaultCareLog(dateValue: string): CareLog {
   return {
     id: '',
-    date,
+    date: dateValue,
     iron_drops: false,
     multivitamin_drops: false,
     vitamin_c_given: false,
@@ -44,9 +54,57 @@ function defaultCareLog(date: string): CareLog {
   };
 }
 
-function isWeekend(date: string): boolean {
-  const day = parseISO(date).getDay();
+function isWeekend(dateValue: string): boolean {
+  const day = parseISO(dateValue).getDay();
   return day === 0 || day === 6;
+}
+
+function readPendingMutations(): PendingMutation[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = localStorage.getItem(PENDING_MUTATIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as PendingMutation[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingMutations(items: PendingMutation[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PENDING_MUTATIONS_KEY, JSON.stringify(items));
+}
+
+function enqueuePendingMutation(item: PendingMutation) {
+  const current = readPendingMutations();
+  current.push(item);
+  writePendingMutations(current);
+  return current.length;
+}
+
+function isTempNapId(napId: string) {
+  return napId.startsWith('temp-');
+}
+
+function toDisplayNap(nap: NapLog): NapLog {
+  return {
+    ...nap,
+    start_time: nap.start_time.slice(0, 5),
+    end_time: nap.end_time ? nap.end_time.slice(0, 5) : null
+  };
+}
+
+function base64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i += 1) {
+    output[i] = rawData.charCodeAt(i);
+  }
+  return output;
 }
 
 export function HomeClient({
@@ -62,13 +120,77 @@ export function HomeClient({
 }: HomeClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const syncingRef = useRef(false);
   const [activeTab, setActiveTab] = useState<TabKey>('development');
   const [activities, setActivities] = useState(initialActivities);
   const [nutritionLogs, setNutritionLogs] = useState(initialNutritionLogs);
   const [careLog, setCareLog] = useState(initialCareLog ?? defaultCareLog(date));
   const [napLogs, setNapLogs] = useState(initialNapLogs);
   const [clientTimeZone, setClientTimeZone] = useState(timeZone);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [isOffline, setIsOffline] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'idle' | 'enabled' | 'blocked' | 'unsupported' | 'error'>('idle');
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const completionPercentage = useMemo(() => {
+    if (!activities.length) return 0;
+    const completed = activities.filter((activity) => activity.log?.completed).length;
+    return Math.round((completed / activities.length) * 100);
+  }, [activities]);
+
+  const groupedActivities = useMemo(() => {
+    return activities.reduce<Record<string, ActivityWithLog[]>>((acc, activity) => {
+      acc[activity.category] = acc[activity.category] ?? [];
+      acc[activity.category].push(activity);
+      return acc;
+    }, {});
+  }, [activities]);
+
+  const syncPendingMutations = useCallback(async () => {
+    if (syncingRef.current) return;
+    if (typeof window === 'undefined' || !navigator.onLine) return;
+
+    syncingRef.current = true;
+    let queue = readPendingMutations();
+
+    try {
+      while (queue.length > 0) {
+        const item = queue[0];
+        try {
+          const res = await fetch(item.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.body)
+          });
+
+          if (!res.ok) {
+            queue = queue.slice(1);
+            writePendingMutations(queue);
+            continue;
+          }
+
+          if (item.kind === 'nap-create') {
+            const payload = (await res.json()) as { nap?: NapLog };
+            if (item.tempNapId && payload.nap) {
+              const syncedNap = toDisplayNap(payload.nap);
+              setNapLogs((current) => current.map((nap) => (nap.id === item.tempNapId ? syncedNap : nap)));
+            }
+          }
+
+          queue = queue.slice(1);
+          writePendingMutations(queue);
+          setPendingSyncCount(queue.length);
+        } catch {
+          setIsOffline(true);
+          break;
+        }
+      }
+    } finally {
+      syncingRef.current = false;
+      setPendingSyncCount(readPendingMutations().length);
+    }
+  }, []);
 
   useEffect(() => {
     setActivities(initialActivities);
@@ -78,6 +200,29 @@ export function HomeClient({
   }, [date, initialActivities, initialCareLog, initialNapLogs, initialNutritionLogs]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setPendingSyncCount(readPendingMutations().length);
+    setIsOffline(!navigator.onLine);
+
+    const onOnline = () => {
+      setIsOffline(false);
+      syncPendingMutations();
+    };
+    const onOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
+    syncPendingMutations();
+
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [syncPendingMutations]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
     setClientTimeZone(detectedTimeZone);
 
@@ -93,19 +238,122 @@ export function HomeClient({
     router.replace(`/?${params.toString()}`);
   }, [date, router, searchParams, timeZone]);
 
-  const completionPercentage = useMemo(() => {
-    if (!activities.length) return 0;
-    const completed = activities.filter((activity) => activity.log?.completed).length;
-    return Math.round((completed / activities.length) * 100);
-  }, [activities]);
+  useEffect(() => {
+    if (!('Notification' in window)) {
+      setPushStatus('unsupported');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      setPushStatus('enabled');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setPushStatus('blocked');
+      return;
+    }
+    setPushStatus('idle');
+  }, []);
 
-  const groupedActivities = useMemo(() => {
-    return activities.reduce<Record<string, ActivityWithLog[]>>((acc, activity) => {
-      acc[activity.category] = acc[activity.category] ?? [];
-      acc[activity.category].push(activity);
-      return acc;
-    }, {});
-  }, [activities]);
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // no-op
+    });
+  }, []);
+
+  function onDateChange(nextDate: string) {
+    if (!isDateWithinBackRange(nextDate, maxDate, 7)) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('date', nextDate);
+    params.set('tz', clientTimeZone || FALLBACK_TIME_ZONE);
+    router.push(`/?${params.toString()}`);
+  }
+
+  async function sendMutationOrQueue(args: {
+    mutation: PendingMutation;
+    onServerError?: () => void;
+    onSuccess?: (payload?: unknown) => void;
+  }) {
+    try {
+      const res = await fetch(args.mutation.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(args.mutation.body)
+      });
+
+      if (!res.ok) {
+        args.onServerError?.();
+        return;
+      }
+
+      let payload: unknown = undefined;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = undefined;
+      }
+      args.onSuccess?.(payload);
+    } catch {
+      const count = enqueuePendingMutation(args.mutation);
+      setPendingSyncCount(count);
+      setIsOffline(true);
+    }
+  }
+
+  async function enablePushNotifications() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushStatus('unsupported');
+      setPushMessage('Push notifications are not supported on this device/browser.');
+      return;
+    }
+
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      setPushStatus('error');
+      setPushMessage('Push key is missing. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      setPushStatus(permission === 'denied' ? 'blocked' : 'error');
+      setPushMessage('Notification permission was not granted.');
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const existing = await registration.pushManager.getSubscription();
+      const subscription =
+        existing ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64ToUint8Array(publicKey) as BufferSource
+        }));
+
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
+      const res = await fetch('/api/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription, timezone })
+      });
+
+      if (!res.ok) {
+        setPushStatus('error');
+        setPushMessage('Could not save push subscription on server.');
+        return;
+      }
+
+      setPushStatus('enabled');
+      setPushMessage('Push reminders enabled.');
+    } catch {
+      setPushStatus('error');
+      setPushMessage('Push subscription failed.');
+    }
+  }
 
   async function upsertDailyLog(payload: {
     activityId: string;
@@ -140,34 +388,22 @@ export function HomeClient({
     );
 
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/daily-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'generic',
+          endpoint: '/api/daily-log',
+          body: {
             date,
             activityId: payload.activityId,
             completed: mergedLog.completed,
             rating: mergedLog.rating,
             duration: mergedLog.duration
-          })
-        });
-        if (!res.ok) throw new Error('Unable to save activity log');
-      } catch {
-        setActivities(previous);
-      }
+          }
+        },
+        onServerError: () => setActivities(previous)
+      });
     });
-  }
-
-  function onDateChange(nextDate: string) {
-    if (!isDateWithinBackRange(nextDate, maxDate, 7)) {
-      return;
-    }
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('date', nextDate);
-    params.set('tz', clientTimeZone || FALLBACK_TIME_ZONE);
-    router.push(`/?${params.toString()}`);
   }
 
   async function upsertNutritionLog(payload: {
@@ -206,16 +442,15 @@ export function HomeClient({
     });
 
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/nutrition-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date, ...payload })
-        });
-        if (!res.ok) throw new Error('Unable to save nutrition log');
-      } catch {
-        setNutritionLogs(previous);
-      }
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'generic',
+          endpoint: '/api/nutrition-log',
+          body: { date, ...payload }
+        },
+        onServerError: () => setNutritionLogs(previous)
+      });
     });
   }
 
@@ -231,11 +466,12 @@ export function HomeClient({
     setCareLog(next);
 
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/care-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'generic',
+          endpoint: '/api/care-log',
+          body: {
             date,
             ironDrops: next.iron_drops,
             multivitaminDrops: next.multivitamin_drops,
@@ -243,63 +479,100 @@ export function HomeClient({
             vitaminCFruit: next.vitamin_c_fruit,
             bathCompleted: next.bath_completed,
             bathDuration: next.bath_duration
-          })
-        });
-        if (!res.ok) throw new Error('Unable to save care log');
-      } catch {
-        setCareLog(previous);
-      }
+          }
+        },
+        onServerError: () => setCareLog(previous)
+      });
     });
   }
 
+  function updatePendingTempNap(tempNapId: string, nextNap: NapLog) {
+    const queue = readPendingMutations();
+    const index = queue.findIndex((item) => item.kind === 'nap-create' && item.tempNapId === tempNapId);
+    if (index === -1) return;
+
+    queue[index] = {
+      ...queue[index],
+      body: {
+        action: 'create',
+        date: nextNap.date,
+        startTime: nextNap.start_time,
+        endTime: nextNap.entry_mode === 'end_time' ? nextNap.end_time : null,
+        durationMinutes: nextNap.entry_mode === 'duration' ? nextNap.duration_minutes : null,
+        entryMode: nextNap.entry_mode
+      }
+    };
+    writePendingMutations(queue);
+  }
+
+  function removePendingTempNap(tempNapId: string) {
+    const queue = readPendingMutations().filter(
+      (item) => !(item.kind === 'nap-create' && item.tempNapId === tempNapId)
+    );
+    writePendingMutations(queue);
+    setPendingSyncCount(queue.length);
+  }
+
   async function addNap() {
+    const tempNapId = `temp-${Date.now()}`;
+    const tempNap: NapLog = {
+      id: tempNapId,
+      date,
+      start_time: '12:00',
+      end_time: null,
+      duration_minutes: 60,
+      entry_mode: 'duration'
+    };
+
+    setNapLogs((current) => [...current, tempNap]);
+
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/nap-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'nap-create',
+          endpoint: '/api/nap-log',
+          body: {
             action: 'create',
             date,
             startTime: '12:00',
             entryMode: 'duration',
             durationMinutes: 60,
             endTime: null
-          })
-        });
-        if (!res.ok) throw new Error('Unable to create nap');
-        const payload = await res.json();
-        const nap = payload.nap as NapLog;
-        setNapLogs((current) => [
-          ...current,
-          {
-            ...nap,
-            start_time: nap.start_time.slice(0, 5),
-            end_time: nap.end_time ? nap.end_time.slice(0, 5) : null
-          }
-        ]);
-      } catch {
-        // no-op
-      }
+          },
+          tempNapId
+        },
+        onServerError: () => setNapLogs((current) => current.filter((nap) => nap.id !== tempNapId)),
+        onSuccess: (payload) => {
+          const response = payload as { nap?: NapLog };
+          if (!response?.nap) return;
+          const syncedNap = toDisplayNap(response.nap);
+          setNapLogs((current) => current.map((nap) => (nap.id === tempNapId ? syncedNap : nap)));
+        }
+      });
     });
   }
 
   async function updateNap(napId: string, changes: Partial<NapLog>) {
     const previous = napLogs;
+    const currentNap = napLogs.find((nap) => nap.id === napId);
+    if (!currentNap) return;
 
-    setNapLogs((current) => current.map((nap) => (nap.id === napId ? { ...nap, ...changes } : nap)));
+    const merged = { ...currentNap, ...changes };
+    setNapLogs((current) => current.map((nap) => (nap.id === napId ? merged : nap)));
 
-    const updatedNap = napLogs.find((nap) => nap.id === napId);
-    if (!updatedNap) return;
-
-    const merged = { ...updatedNap, ...changes };
+    if (isTempNapId(napId)) {
+      updatePendingTempNap(napId, merged);
+      return;
+    }
 
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/nap-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'nap-update',
+          endpoint: '/api/nap-log',
+          body: {
             action: 'update',
             id: napId,
             date,
@@ -307,12 +580,10 @@ export function HomeClient({
             endTime: merged.entry_mode === 'end_time' ? merged.end_time : null,
             durationMinutes: merged.entry_mode === 'duration' ? merged.duration_minutes : null,
             entryMode: merged.entry_mode
-          })
-        });
-        if (!res.ok) throw new Error('Unable to update nap');
-      } catch {
-        setNapLogs(previous);
-      }
+          }
+        },
+        onServerError: () => setNapLogs(previous)
+      });
     });
   }
 
@@ -320,17 +591,21 @@ export function HomeClient({
     const previous = napLogs;
     setNapLogs((current) => current.filter((nap) => nap.id !== napId));
 
+    if (isTempNapId(napId)) {
+      removePendingTempNap(napId);
+      return;
+    }
+
     startTransition(async () => {
-      try {
-        const res = await fetch('/api/nap-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'delete', id: napId })
-        });
-        if (!res.ok) throw new Error('Unable to delete nap');
-      } catch {
-        setNapLogs(previous);
-      }
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'nap-delete',
+          endpoint: '/api/nap-log',
+          body: { action: 'delete', id: napId }
+        },
+        onServerError: () => setNapLogs(previous)
+      });
     });
   }
 
@@ -343,6 +618,12 @@ export function HomeClient({
           <h1 className="text-2xl font-bold">Ahana&apos;s Development Tracker</h1>
           <p className="mt-1 text-sm opacity-90">Daily checklist for {date}</p>
           <p className="text-xs opacity-80">Timezone: {clientTimeZone}</p>
+          {pendingSyncCount > 0 && (
+            <p className="mt-1 text-xs font-semibold text-amber-100">
+              {pendingSyncCount} offline updates pending sync.
+            </p>
+          )}
+          {isOffline && <p className="text-xs font-semibold text-amber-100">You are offline. Changes will sync later.</p>}
         </div>
         <div className="relative mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-white/20 p-3">
@@ -353,6 +634,16 @@ export function HomeClient({
             <p className="text-xs uppercase">Weekly streak</p>
             <p className="text-2xl font-bold">{insights.weeklyStreak} days</p>
           </div>
+        </div>
+        <div className="relative mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={enablePushNotifications}
+            className="rounded-xl bg-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/30"
+          >
+            {pushStatus === 'enabled' ? 'Push reminders enabled' : 'Enable push reminders'}
+          </button>
+          {pushMessage && <p className="self-center text-xs text-emerald-100">{pushMessage}</p>}
         </div>
       </section>
 

@@ -3,6 +3,7 @@ export type Activity = {
   name: string;
   category: string;
   skill_tags: string[];
+  how_to: string | null;
 };
 
 export type DailyLog = {
@@ -63,4 +64,17 @@ export type HomeInsights = {
   weeklyStreak: number;
   noOutdoorFor3Days: boolean;
   lowLanguageFor3Days: boolean;
+};
+
+export type AuditLog = {
+  id: string;
+  created_at: string;
+  event_type: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  event_date: string | null;
+  request_ip: string | null;
+  user_agent: string | null;
+  payload: Record<string, unknown> | null;
 };

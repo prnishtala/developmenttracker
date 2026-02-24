@@ -1,6 +1,6 @@
 import { format, getDay, parseISO, subDays } from 'date-fns';
 import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
-import { ActivityWithLog, CareLog, DashboardData, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
+import { ActivityWithLog, AuditLog, CareLog, DashboardData, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
 type LogWithActivity = {
@@ -57,7 +57,7 @@ export async function getPlannedActivitiesForDate(targetDate: string): Promise<A
   const supabase = getServiceSupabaseClient();
 
   const [{ data: activities, error: activityError }, { data: logs, error: logError }] = await Promise.all([
-    supabase.from('activities').select('id, name, category, skill_tags').order('category').order('name'),
+    supabase.from('activities').select('id, name, category, skill_tags, how_to').order('category').order('name'),
     supabase.from('daily_logs').select('id, date, activity_id, completed, rating, duration').eq('date', targetDate)
   ]);
 
@@ -91,6 +91,18 @@ export async function getPlannedActivitiesForDate(targetDate: string): Promise<A
   }
 
   return planned;
+}
+
+export async function getAuditLogs(limit = 200): Promise<AuditLog[]> {
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('id, created_at, event_type, action, entity_type, entity_id, event_date, request_ip, user_agent, payload')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as AuditLog[];
 }
 
 export async function getNutritionLogsForDate(targetDate: string): Promise<NutritionLog[]> {

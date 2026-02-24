@@ -32,9 +32,12 @@ export function ActivityCard({ activity, onChange }: ActivityCardProps) {
               : 'border-slate-300 bg-white text-slate-500'
           }`}
         >
-          {completed ? '?' : ''}
+          {completed ? '\u2713' : ''}
         </button>
       </div>
+      <p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+        {activity.how_to ?? 'Guide baby through this activity with gentle support and positive encouragement.'}
+      </p>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">

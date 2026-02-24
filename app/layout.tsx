@@ -13,12 +13,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-4 sm:px-6">
           <nav className="mb-4 flex items-center justify-between rounded-2xl bg-white/90 p-3 shadow-sm">
-            <Link className="text-sm font-semibold text-brand-600" href="/">
-              Home
-            </Link>
-            <Link className="text-sm font-semibold text-brand-600" href="/dashboard">
-              Parent Dashboard
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link className="text-sm font-semibold text-brand-600" href="/">
+                Home
+              </Link>
+              <Link className="text-sm font-semibold text-brand-600" href="/dashboard">
+                Parent Dashboard
+              </Link>
+              <Link className="text-sm font-semibold text-brand-600" href="/audit">
+                Audit History
+              </Link>
+            </div>
           </nav>
           {children}
         </main>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequestMeta, writeAuditLog } from '@/lib/audit';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getServiceSupabaseClient();
+    const requestMeta = getRequestMeta(request);
     const { error } = await supabase.from('nutrition_logs').upsert(
       {
         date,
@@ -31,6 +33,19 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    await writeAuditLog(supabase, requestMeta, {
+      eventType: 'nutrition_log',
+      action: 'upsert',
+      entityType: 'nutrition_logs',
+      entityId: mealType,
+      eventDate: date,
+      payload: {
+        hadMeal,
+        quantity: hadMeal ? quantity : null,
+        mealNotes: hadMeal ? (mealNotes?.trim() || null) : null
+      }
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
