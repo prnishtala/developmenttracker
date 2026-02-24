@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Ahana Development Tracker',
+  title: "Ahana's Development Tracker",
   description: 'Track daily development activities and food intake for toddlers.'
 };
 

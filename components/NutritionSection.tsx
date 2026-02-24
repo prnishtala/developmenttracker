@@ -9,6 +9,7 @@ type NutritionSectionProps = {
     mealType: string;
     hadMeal: boolean;
     quantity: string | null;
+    mealNotes: string | null;
   }) => void;
 };
 
@@ -22,6 +23,7 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
         const current = byMeal.get(meal);
         const hadMeal = current?.had_meal ?? false;
         const quantity = current?.quantity ?? 'Normal';
+        const mealNotes = current?.meal_notes ?? '';
 
         return (
           <div key={meal} className="rounded-xl border border-slate-200 p-3">
@@ -33,7 +35,7 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
                   className={`h-10 min-w-16 rounded-xl text-sm font-semibold ${
                     hadMeal ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-700'
                   }`}
-                  onClick={() => onChange({ mealType: meal, hadMeal: true, quantity })}
+                  onClick={() => onChange({ mealType: meal, hadMeal: true, quantity, mealNotes })}
                 >
                   Yes
                 </button>
@@ -42,7 +44,7 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
                   className={`h-10 min-w-16 rounded-xl text-sm font-semibold ${
                     !hadMeal ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700'
                   }`}
-                  onClick={() => onChange({ mealType: meal, hadMeal: false, quantity: null })}
+                  onClick={() => onChange({ mealType: meal, hadMeal: false, quantity: null, mealNotes: null })}
                 >
                   No
                 </button>
@@ -50,26 +52,47 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
             </div>
 
             {hadMeal && (
-              <label className="mt-3 flex flex-col gap-1 text-xs font-medium text-slate-600">
-                Quantity
-                <select
-                  className="h-11 rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800"
-                  value={quantity}
-                  onChange={(event) =>
-                    onChange({
-                      mealType: meal,
-                      hadMeal: true,
-                      quantity: event.target.value
-                    })
-                  }
-                >
-                  {QUANTITY_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <>
+                <label className="mt-3 flex flex-col gap-1 text-xs font-medium text-slate-600">
+                  Quantity
+                  <select
+                    className="h-11 rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800"
+                    value={quantity}
+                    onChange={(event) =>
+                      onChange({
+                        mealType: meal,
+                        hadMeal: true,
+                        quantity: event.target.value,
+                        mealNotes
+                      })
+                    }
+                  >
+                    {QUANTITY_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="mt-3 flex flex-col gap-1 text-xs font-medium text-slate-600">
+                  What did baby eat and how much? (optional)
+                  <textarea
+                    rows={3}
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                    value={mealNotes}
+                    onChange={(event) =>
+                      onChange({
+                        mealType: meal,
+                        hadMeal: true,
+                        quantity,
+                        mealNotes: event.target.value
+                      })
+                    }
+                    placeholder="Example: 1 idli + 1/2 banana"
+                  />
+                </label>
+              </>
             )}
           </div>
         );

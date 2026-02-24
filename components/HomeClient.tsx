@@ -1,15 +1,20 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { parseISO } from 'date-fns';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ActivityCard } from '@/components/ActivityCard';
 import { CareSection } from '@/components/CareSection';
 import { NapSection } from '@/components/NapSection';
 import { NutritionSection } from '@/components/NutritionSection';
+import { FALLBACK_TIME_ZONE, getDateInTimeZone, isDateWithinBackRange } from '@/lib/date';
 import { ActivityWithLog, CareLog, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 
 type HomeClientProps = {
   date: string;
+  minDate: string;
+  maxDate: string;
+  timeZone: string;
   initialActivities: ActivityWithLog[];
   initialNutritionLogs: NutritionLog[];
   initialCareLog: CareLog | null;
@@ -46,18 +51,47 @@ function isWeekend(date: string): boolean {
 
 export function HomeClient({
   date,
+  minDate,
+  maxDate,
+  timeZone,
   initialActivities,
   initialNutritionLogs,
   initialCareLog,
   initialNapLogs,
   insights
 }: HomeClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>('development');
   const [activities, setActivities] = useState(initialActivities);
   const [nutritionLogs, setNutritionLogs] = useState(initialNutritionLogs);
   const [careLog, setCareLog] = useState(initialCareLog ?? defaultCareLog(date));
   const [napLogs, setNapLogs] = useState(initialNapLogs);
+  const [clientTimeZone, setClientTimeZone] = useState(timeZone);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setActivities(initialActivities);
+    setNutritionLogs(initialNutritionLogs);
+    setCareLog(initialCareLog ?? defaultCareLog(date));
+    setNapLogs(initialNapLogs);
+  }, [date, initialActivities, initialCareLog, initialNapLogs, initialNutritionLogs]);
+
+  useEffect(() => {
+    const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
+    setClientTimeZone(detectedTimeZone);
+
+    if (detectedTimeZone === timeZone) return;
+
+    const todayInDetectedZone = getDateInTimeZone(new Date(), detectedTimeZone);
+    const nextDate = isDateWithinBackRange(date, todayInDetectedZone, 7) ? date : todayInDetectedZone;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tz', detectedTimeZone);
+    params.set('date', nextDate);
+
+    router.replace(`/?${params.toString()}`);
+  }, [date, router, searchParams, timeZone]);
 
   const completionPercentage = useMemo(() => {
     if (!activities.length) return 0;
@@ -125,7 +159,23 @@ export function HomeClient({
     });
   }
 
-  async function upsertNutritionLog(payload: { mealType: string; hadMeal: boolean; quantity: string | null }) {
+  function onDateChange(nextDate: string) {
+    if (!isDateWithinBackRange(nextDate, maxDate, 7)) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('date', nextDate);
+    params.set('tz', clientTimeZone || FALLBACK_TIME_ZONE);
+    router.push(`/?${params.toString()}`);
+  }
+
+  async function upsertNutritionLog(payload: {
+    mealType: string;
+    hadMeal: boolean;
+    quantity: string | null;
+    mealNotes: string | null;
+  }) {
     const previous = nutritionLogs;
 
     setNutritionLogs((current) => {
@@ -138,13 +188,19 @@ export function HomeClient({
             date,
             meal_type: payload.mealType,
             had_meal: payload.hadMeal,
-            quantity: payload.quantity
+            quantity: payload.quantity,
+            meal_notes: payload.hadMeal ? payload.mealNotes : null
           }
         ];
       }
       return current.map((item) =>
         item.meal_type === payload.mealType
-          ? { ...item, had_meal: payload.hadMeal, quantity: payload.quantity }
+          ? {
+              ...item,
+              had_meal: payload.hadMeal,
+              quantity: payload.quantity,
+              meal_notes: payload.hadMeal ? payload.mealNotes : null
+            }
           : item
       );
     });
@@ -280,10 +336,15 @@ export function HomeClient({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-brand-500 p-4 text-white shadow-sm">
-        <h1 className="text-2xl font-bold">Ahana Development Tracker</h1>
-        <p className="mt-1 text-sm opacity-90">Daily checklist for {date}</p>
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+      <section className="relative overflow-hidden rounded-2xl bg-brand-500 p-4 text-white shadow-sm">
+        <div className="absolute inset-0 bg-[url('/jungle-banner.svg')] bg-cover bg-center opacity-35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/60 via-lime-800/45 to-teal-900/60" />
+        <div className="relative">
+          <h1 className="text-2xl font-bold">Ahana&apos;s Development Tracker</h1>
+          <p className="mt-1 text-sm opacity-90">Daily checklist for {date}</p>
+          <p className="text-xs opacity-80">Timezone: {clientTimeZone}</p>
+        </div>
+        <div className="relative mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-white/20 p-3">
             <p className="text-xs uppercase">Development completion</p>
             <p className="text-2xl font-bold">{completionPercentage}%</p>
@@ -293,6 +354,20 @@ export function HomeClient({
             <p className="text-2xl font-bold">{insights.weeklyStreak} days</p>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-2xl bg-white p-4 shadow-sm">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Select Date (up to 1 week back)
+          <input
+            type="date"
+            value={date}
+            min={minDate}
+            max={maxDate}
+            onChange={(event) => onDateChange(event.target.value)}
+            className="h-11 rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-900"
+          />
+        </label>
       </section>
 
       {insights.noOutdoorFor3Days && (

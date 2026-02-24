@@ -20,6 +20,7 @@ export type NutritionLog = {
   meal_type: string;
   had_meal: boolean;
   quantity: string | null;
+  meal_notes: string | null;
 };
 
 export type CareLog = {

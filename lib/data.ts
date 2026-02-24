@@ -97,7 +97,7 @@ export async function getNutritionLogsForDate(targetDate: string): Promise<Nutri
   const supabase = getServiceSupabaseClient();
   const { data, error } = await supabase
     .from('nutrition_logs')
-    .select('id, date, meal_type, had_meal, quantity')
+    .select('id, date, meal_type, had_meal, quantity, meal_notes')
     .eq('date', targetDate);
 
   if (error) throw error;
