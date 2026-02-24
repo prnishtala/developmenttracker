@@ -66,6 +66,48 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </article>
       </section>
 
+      <section className="grid gap-4 md:grid-cols-2">
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Estimated Calories Trend (14 days)</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.calorieTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line dataKey="calories" type="monotone" stroke="#2563eb" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Estimated Nutrients vs Target</h2>
+          <div className="mt-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.nutritionSnapshot.comparison}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nutrient" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="estimated" name="Estimated" fill="#16a34a" />
+                <Bar dataKey="target" name="Target" fill="#94a3b8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">AI Nutrition Summary</p>
+            {data.nutritionSnapshot.insights.map((insight) => (
+              <p key={insight} className="text-sm text-slate-700">
+                {insight}
+              </p>
+            ))}
+          </div>
+        </article>
+      </section>
+
       <article className="rounded-2xl bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Skill Minutes by Category (7 days)</h2>
         <div className="mt-2 h-80">

@@ -53,11 +53,32 @@ export type DashboardData = {
   skillMinutes: { skill: string; minutes: number }[];
   languageTrend: { date: string; minutes: number }[];
   foodDiversity: { date: string; count: number }[];
+  calorieTrend: { date: string; calories: number }[];
   motorTrend: { date: string; minutes: number }[];
   mealCompletionTrend: { date: string; meals: number }[];
   medicineSummary: { label: string; value: number }[];
   careTrend: { date: string; careCount: number }[];
   napTrend: { date: string; totalMinutes: number; naps: number }[];
+  nutritionSnapshot: {
+    estimated: {
+      calories: number;
+      protein_g: number;
+      carbs_g: number;
+      fat_g: number;
+      iron_mg: number;
+      calcium_mg: number;
+      vitamin_c_mg: number;
+    };
+    targets: {
+      calories: number;
+      protein_g: number;
+      iron_mg: number;
+      calcium_mg: number;
+      vitamin_c_mg: number;
+    };
+    comparison: { nutrient: string; estimated: number; target: number; unit: string }[];
+    insights: string[];
+  };
 };
 
 export type HomeInsights = {

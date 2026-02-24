@@ -1,5 +1,12 @@
 import { format, getDay, parseISO, subDays } from 'date-fns';
 import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
+import {
+  addNutrients,
+  estimateNutritionFromNote,
+  getToddlerTargets,
+  roundNutrients,
+  zeroNutrients
+} from '@/lib/nutrition-ai';
 import { ActivityWithLog, AuditLog, CareLog, DashboardData, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
@@ -234,7 +241,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       .order('date', { ascending: true }),
     supabase
       .from('nutrition_logs')
-      .select('date, meal_type, had_meal')
+      .select('date, meal_type, had_meal, quantity, meal_notes')
       .gte('date', last14)
       .order('date', { ascending: true }),
     supabase
@@ -294,9 +301,11 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
 
   const foodByDay = new Map<string, Set<string>>();
   const mealsByDay = new Map<string, number>();
+  const caloriesByDay = new Map<string, number>();
   const careByDay = new Map<string, number>();
   const napMinutesByDay = new Map<string, number>();
   const napCountByDay = new Map<string, number>();
+  const nutrientByDay = new Map<string, ReturnType<typeof zeroNutrients>>();
 
   let ironDays = 0;
   let multivitaminDays = 0;
@@ -307,9 +316,11 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     const key = dateKey(subDays(today, i));
     foodByDay.set(key, new Set());
     mealsByDay.set(key, 0);
+    caloriesByDay.set(key, 0);
     careByDay.set(key, 0);
     napMinutesByDay.set(key, 0);
     napCountByDay.set(key, 0);
+    nutrientByDay.set(key, zeroNutrients());
   }
 
   for (const item of nutrition14 ?? []) {
@@ -319,6 +330,14 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     }
     foodByDay.get(item.date)?.add(item.meal_type);
     mealsByDay.set(item.date, (mealsByDay.get(item.date) ?? 0) + 1);
+
+    const estimated = estimateNutritionFromNote(item.meal_notes, item.quantity);
+    caloriesByDay.set(item.date, (caloriesByDay.get(item.date) ?? 0) + estimated.calories);
+
+    if (!nutrientByDay.has(item.date)) {
+      nutrientByDay.set(item.date, zeroNutrients());
+    }
+    addNutrients(nutrientByDay.get(item.date)!, estimated);
   }
 
   for (const care of care14 ?? []) {
@@ -353,6 +372,43 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     napCountByDay.set(nap.date, (napCountByDay.get(nap.date) ?? 0) + 1);
   }
 
+  const todayKey = dateKey(today);
+  const snapshotKey = nutrientByDay.has(todayKey)
+    ? todayKey
+    : Array.from(nutrientByDay.keys()).sort().slice(-1)[0] ?? todayKey;
+  const snapshotEstimated = roundNutrients(nutrientByDay.get(snapshotKey) ?? zeroNutrients());
+  const targets = getToddlerTargets();
+
+  const nutritionComparison = [
+    { nutrient: 'Calories', estimated: snapshotEstimated.calories, target: targets.calories, unit: 'kcal' },
+    { nutrient: 'Protein', estimated: snapshotEstimated.protein_g, target: targets.protein_g, unit: 'g' },
+    { nutrient: 'Iron', estimated: snapshotEstimated.iron_mg, target: targets.iron_mg, unit: 'mg' },
+    { nutrient: 'Calcium', estimated: snapshotEstimated.calcium_mg, target: targets.calcium_mg, unit: 'mg' },
+    { nutrient: 'Vitamin C', estimated: snapshotEstimated.vitamin_c_mg, target: targets.vitamin_c_mg, unit: 'mg' }
+  ];
+
+  const nutritionInsights: string[] = [];
+  if (snapshotEstimated.calories < targets.calories * 0.75) {
+    nutritionInsights.push('Calories appear below target. Add one dense snack like banana with curd or paneer.');
+  } else if (snapshotEstimated.calories > targets.calories * 1.2) {
+    nutritionInsights.push('Calories appear above target. Balance with more fruits and vegetables next meal.');
+  } else {
+    nutritionInsights.push('Calories are close to target range for the day.');
+  }
+
+  if (snapshotEstimated.protein_g < targets.protein_g) {
+    nutritionInsights.push('Protein looks low. Consider adding dal, paneer, egg, or curd.');
+  }
+  if (snapshotEstimated.iron_mg < targets.iron_mg) {
+    nutritionInsights.push('Iron looks low. Consider lentils, leafy foods, and pair with vitamin C fruit.');
+  }
+  if (snapshotEstimated.calcium_mg < targets.calcium_mg) {
+    nutritionInsights.push('Calcium seems low. Add curd, paneer, or ragi-based foods.');
+  }
+  if (nutritionInsights.length === 1) {
+    nutritionInsights.push('Nutrition balance looks reasonable based on logged items and quantities.');
+  }
+
   return {
     completion: { completed, missed },
     skillMinutes: Array.from(skillMinutesMap.entries())
@@ -360,6 +416,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       .sort((a, b) => b.minutes - a.minutes),
     languageTrend: Array.from(languageByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
     foodDiversity: Array.from(foodByDay.entries()).map(([date, groups]) => ({ date, count: groups.size })),
+    calorieTrend: Array.from(caloriesByDay.entries()).map(([date, calories]) => ({ date, calories: Math.round(calories) })),
     motorTrend: Array.from(motorByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
     mealCompletionTrend: Array.from(mealsByDay.entries()).map(([date, meals]) => ({ date, meals })),
     medicineSummary: [
@@ -373,6 +430,12 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       date,
       totalMinutes,
       naps: napCountByDay.get(date) ?? 0
-    }))
+    })),
+    nutritionSnapshot: {
+      estimated: snapshotEstimated,
+      targets,
+      comparison: nutritionComparison,
+      insights: nutritionInsights
+    }
   };
 }

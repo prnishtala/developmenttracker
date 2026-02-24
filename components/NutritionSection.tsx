@@ -1,6 +1,7 @@
 'use client';
 
 import { MEAL_TYPES, QUANTITY_OPTIONS } from '@/lib/constants';
+import { COMMON_INDIAN_FOOD_CHIPS } from '@/lib/nutrition-ai';
 import { NutritionLog } from '@/lib/types';
 
 type NutritionSectionProps = {
@@ -15,6 +16,14 @@ type NutritionSectionProps = {
 
 export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
   const byMeal = new Map(logs.map((log) => [log.meal_type, log]));
+
+  function appendFoodChip(currentNotes: string, chip: string): string {
+    const trimmed = currentNotes.trim();
+    if (!trimmed) return chip;
+    const normalized = trimmed.toLowerCase();
+    if (normalized.includes(chip.toLowerCase())) return currentNotes;
+    return `${trimmed}, ${chip}`;
+  }
 
   return (
     <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
@@ -92,6 +101,29 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
                     placeholder="Example: 1 idli + 1/2 banana"
                   />
                 </label>
+
+                <div className="mt-2">
+                  <p className="mb-1 text-xs font-medium text-slate-600">Quick add common foods</p>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMON_INDIAN_FOOD_CHIPS.map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() =>
+                          onChange({
+                            mealType: meal,
+                            hadMeal: true,
+                            quantity,
+                            mealNotes: appendFoodChip(mealNotes, chip)
+                          })
+                        }
+                        className="rounded-full border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
           </div>
