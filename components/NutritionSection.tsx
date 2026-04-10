@@ -5,6 +5,57 @@ import { MEAL_TYPES, QUANTITY_OPTIONS } from '@/lib/constants';
 import { COMMON_INDIAN_FOOD_CHIPS } from '@/lib/nutrition-ai';
 import { NutritionLog } from '@/lib/types';
 
+const MEAL_FLOW_CUES = [
+  'Breakfast around 8:30',
+  'Mid-morning snack around 10',
+  'Nap around 12:30',
+  'Lunch after waking',
+  'Evening nap',
+  'Pre-dinner snack',
+  'Dinner',
+  'A2 milk',
+  'Sleep'
+];
+
+const DETAIL_PROMPTS = [
+  'ate half',
+  'finished all',
+  'self-fed',
+  'needed help',
+  'wanted more',
+  'small pieces',
+  'with water',
+  'took a few bites'
+];
+
+const DETAIL_PROMPTS_BY_MEAL: Record<string, string[]> = {
+  Breakfast: ['fresh start', 'with milk', 'ate eagerly', 'wanted more'],
+  'Mid-morning snack': ['after play', 'quick snack', 'asked for more', 'shared'],
+  Lunch: ['after nap', 'ate slowly', 'finished all', 'with curd'],
+  'Pre-dinner snack': ['before bath', 'light snack', 'asked for more', 'self-fed'],
+  Dinner: ['at family table', 'with curd', 'with ghee', 'took a few bites'],
+  'A2 milk': ['before sleep', '150 ml', 'finished all', 'warm milk']
+};
+
+const FOOD_SUGGESTIONS_BY_MEAL: Record<string, string[]> = {
+  Breakfast: ['Idli', 'Dosa', 'Egg', 'Curd', 'Banana'],
+  'Mid-morning snack': ['Fruit', 'Curd', 'Banana', 'Papaya', 'Guava'],
+  Lunch: ['Rice', 'Dal', 'Curd', 'Paneer', 'Khichdi'],
+  'Pre-dinner snack': ['Fruit', 'Curd', 'Banana', 'Egg', 'Paneer'],
+  Dinner: ['Roti', 'Dal', 'Khichdi', 'Paneer', 'Curd'],
+  'A2 milk': ['A2 milk', 'after dinner', 'before sleep']
+};
+
+const PROTEIN_HINTS = ['egg', 'paneer', 'curd', 'dal', 'milk', 'yogurt', 'dahi', 'cheese'];
+
+function appendNoteFragment(currentNotes: string, fragment: string): string {
+  const trimmed = currentNotes.trim();
+  if (!trimmed) return fragment;
+  const normalized = trimmed.toLowerCase();
+  if (normalized.includes(fragment.toLowerCase())) return currentNotes;
+  return `${trimmed}, ${fragment}`;
+}
+
 type NutritionSectionProps = {
   logs: NutritionLog[];
   onChange: (payload: {
@@ -32,11 +83,24 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
   const mealRows = useMemo(() => [...MEAL_TYPES, ...extraMeals], [extraMeals]);
 
   function appendFoodChip(currentNotes: string, chip: string): string {
-    const trimmed = currentNotes.trim();
-    if (!trimmed) return chip;
-    const normalized = trimmed.toLowerCase();
-    if (normalized.includes(chip.toLowerCase())) return currentNotes;
-    return `${trimmed}, ${chip}`;
+    return appendNoteFragment(currentNotes, chip);
+  }
+
+  function getDetailSuggestions(meal: string, mealNotes: string): string[] {
+    const suggestions = [...(DETAIL_PROMPTS_BY_MEAL[meal] ?? []), ...DETAIL_PROMPTS];
+    const normalized = mealNotes.toLowerCase();
+    return suggestions.filter((item, index) => {
+      if (normalized.includes(item.toLowerCase())) return false;
+      return suggestions.indexOf(item) === index;
+    });
+  }
+
+  function getFoodSuggestions(meal: string, mealNotes: string): string[] {
+    const normalized = mealNotes.toLowerCase();
+    const mealSuggestions = FOOD_SUGGESTIONS_BY_MEAL[meal] ?? ['Curd', 'Paneer', 'Egg'];
+    const needsProtein = !PROTEIN_HINTS.some((hint) => normalized.includes(hint));
+    const suggestions = needsProtein ? [...mealSuggestions, 'Curd', 'Paneer', 'Egg'] : [...mealSuggestions, 'Orange', 'Mosambi', 'Guava'];
+    return Array.from(new Set(suggestions)).filter((item) => !normalized.includes(item.toLowerCase())).slice(0, 5);
   }
 
   function addCustomMeal() {
@@ -59,6 +123,20 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
           Tell us what she ate, how much, and any details you notice. AI uses this text under the hood to estimate
           calories, protein, iron, calcium, vitamin C, and more.
         </p>
+      </div>
+
+      <div className="rounded-[22px] border border-white/10 bg-white/5 p-3">
+        <p className="text-sm font-semibold text-white">Usual day rhythm</p>
+        <p className="mt-1 text-xs leading-5 text-slate-300">
+          These are the slots we expect most days. If the day changes, use the custom meal field below.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {MEAL_FLOW_CUES.map((cue) => (
+            <span key={cue} className="futuristic-chip bg-white/5 text-slate-200">
+              {cue}
+            </span>
+          ))}
+        </div>
       </div>
 
       {mealRows.map((meal) => {
@@ -144,6 +222,48 @@ export function NutritionSection({ logs, onChange }: NutritionSectionProps) {
                 </label>
 
                 <div className="mt-2">
+                  <p className="mb-1 text-xs font-medium text-slate-300">Add more detail</p>
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {getDetailSuggestions(meal, mealNotes).map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() =>
+                          onChange({
+                            mealType: meal,
+                            hadMeal: true,
+                            quantity,
+                            mealNotes: appendNoteFragment(mealNotes, chip)
+                          })
+                        }
+                        className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-200 hover:bg-white/10"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mb-1 text-xs font-medium text-slate-300">Suggested add-ons</p>
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {getFoodSuggestions(meal, mealNotes).map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() =>
+                          onChange({
+                            mealType: meal,
+                            hadMeal: true,
+                            quantity,
+                            mealNotes: appendFoodChip(mealNotes, chip)
+                          })
+                        }
+                        className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-50 hover:bg-cyan-400/20"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
                   <p className="mb-1 text-xs font-medium text-slate-300">Quick add common foods</p>
                   <div className="flex flex-wrap gap-2">
                     {COMMON_INDIAN_FOOD_CHIPS.map((chip) => (

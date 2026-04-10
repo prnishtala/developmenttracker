@@ -19,6 +19,12 @@ const TONE_BAR_STYLES: Record<DashboardTone, string> = {
   watch: 'bg-amber-500'
 };
 
+const CONFIDENCE_STYLES: Record<'high' | 'medium' | 'low', string> = {
+  high: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  medium: 'border-amber-200 bg-amber-50 text-amber-900',
+  low: 'border-rose-200 bg-rose-50 text-rose-900'
+};
+
 const CHART_COLORS = {
   language: '#365314',
   motor: '#ea580c',
@@ -116,6 +122,10 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                   Iron totals include {data.nutritionSnapshot.supplementIronMg} mg from supplements across {data.nutritionSnapshot.supplementIronDays} care days.
                 </p>
               )}
+              <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${CONFIDENCE_STYLES[data.nutritionSnapshot.confidenceLevel]}`}>
+                Nutrition confidence: {data.nutritionSnapshot.confidenceLevel}
+              </div>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{data.nutritionSnapshot.confidenceReason}</p>
             </div>
             <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               Latest meal log: {formatShortDate(data.nutritionSnapshot.latestDate)}
@@ -169,6 +179,16 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
               <p className="mt-1 text-xs text-slate-500">Meals matched to known foods in notes</p>
             </div>
           </div>
+
+          <div className="mt-6 rounded-[24px] bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Routine Patterns</p>
+            <div className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+              {data.routineInsights.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+              {data.routineInsights.length === 0 && <p>No strong routine pattern is standing out yet.</p>}
+            </div>
+          </div>
         </article>
 
         <article className="rounded-[30px] bg-[#102a20] p-6 text-white shadow-[0_24px_80px_rgba(16,42,32,0.22)]">
@@ -187,6 +207,15 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Nutrition Notes</p>
             <div className="mt-3 space-y-2 text-sm leading-6 text-slate-100">
               {data.nutritionSnapshot.insights.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[24px] border border-white/10 bg-white/10 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Weekly Watch Next</p>
+            <div className="mt-3 space-y-2 text-sm leading-6 text-slate-100">
+              {data.narrative.watchNext.map((item) => (
                 <p key={item}>{item}</p>
               ))}
             </div>

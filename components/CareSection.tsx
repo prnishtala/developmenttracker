@@ -82,6 +82,9 @@ export function CareSection({ log, onChange }: CareSectionProps) {
       {medicineGiven && (
         <div className="rounded-[22px] border border-white/10 bg-white/5 p-3">
           <p className="text-sm font-semibold text-white">Vitamin C fruit given with drops?</p>
+          <p className="mt-1 text-xs leading-5 text-slate-300">
+            Vitamin C helps iron absorb better, so this is a good place to capture the fruit name as text too.
+          </p>
           <div className="mt-2 flex gap-2">
             <button
               type="button"
@@ -108,28 +111,47 @@ export function CareSection({ log, onChange }: CareSectionProps) {
           </div>
 
           {log.vitamin_c_given && (
-            <label className="mt-3 flex flex-col gap-2 text-xs font-medium text-slate-300">
-              Which fruit?
-              <select
-                value={selectedVitaminCFruit}
-                onChange={(event) => onChange({ vitamin_c_fruit: event.target.value })}
-                className="futuristic-input h-11"
-              >
-                <option value="">Select fruit</option>
+            <div className="mt-3 space-y-3">
+              <label className="flex flex-col gap-2 text-xs font-medium text-slate-300">
+                Which fruit?
+                <select
+                  value={selectedVitaminCFruit}
+                  onChange={(event) => onChange({ vitamin_c_fruit: event.target.value })}
+                  className="futuristic-input h-11"
+                >
+                  <option value="">Select fruit</option>
+                  {VITAMIN_C_FRUITS.map((fruit) => (
+                    <option key={fruit} value={fruit}>
+                      {fruit}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="flex flex-wrap gap-2">
                 {VITAMIN_C_FRUITS.map((fruit) => (
-                  <option key={fruit} value={fruit}>
+                  <button
+                    key={fruit}
+                    type="button"
+                    onClick={() => onChange({ vitamin_c_fruit: fruit })}
+                    className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-50 hover:bg-cyan-400/20"
+                  >
                     {fruit}
-                  </option>
+                  </button>
                 ))}
-              </select>
-              <input
-                type="text"
-                value={customVitaminCFruit}
-                onChange={(event) => onChange({ vitamin_c_fruit: event.target.value })}
-                className="futuristic-input h-11"
-                placeholder="Or type another fruit"
-              />
-            </label>
+              </div>
+
+              <label className="flex flex-col gap-2 text-xs font-medium text-slate-300">
+                Or type another fruit
+                <input
+                  type="text"
+                  value={customVitaminCFruit}
+                  onChange={(event) => onChange({ vitamin_c_fruit: event.target.value })}
+                  className="futuristic-input h-11"
+                  placeholder="e.g. orange slices, mango"
+                />
+              </label>
+            </div>
           )}
         </div>
       )}

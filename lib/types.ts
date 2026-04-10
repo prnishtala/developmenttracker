@@ -63,7 +63,9 @@ export type DashboardNarrative = {
   strengths: string[];
   concerns: string[];
   actions: string[];
+  watchNext: string[];
   dataQuality: string;
+  confidenceLevel: 'high' | 'medium' | 'low';
   source: 'rule-based' | 'openai';
 };
 
@@ -78,11 +80,14 @@ export type DashboardData = {
   medicineSummary: { label: string; value: number }[];
   careTrend: { date: string; careCount: number }[];
   napTrend: { date: string; totalMinutes: number; naps: number }[];
+  routineInsights: string[];
   summaryCards: DashboardSignal[];
   narrative: DashboardNarrative;
   nutritionSnapshot: {
     calculationSource: 'openai' | 'mixed' | 'heuristic';
     latestDate: string;
+    confidenceLevel: 'high' | 'medium' | 'low';
+    confidenceReason: string;
     supplementIronMg: number;
     supplementIronDays: number;
     estimated: {

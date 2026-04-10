@@ -17,6 +17,18 @@ export type DashboardNarrativeFacts = {
   careSummary: string;
 };
 
+function buildConfidenceLevel(facts: DashboardNarrativeFacts): 'high' | 'medium' | 'low' {
+  if (facts.daysWithMeals >= 10 && facts.notesCoveragePercent >= 75 && facts.recognizableMealsPercent >= 60) {
+    return 'high';
+  }
+
+  if (facts.daysWithMeals >= 7 && facts.notesCoveragePercent >= 50 && facts.recognizableMealsPercent >= 40) {
+    return 'medium';
+  }
+
+  return 'low';
+}
+
 function buildDataQuality(facts: DashboardNarrativeFacts): string {
   if (facts.daysWithMeals <= 4) {
     return `Low confidence: only ${facts.daysWithMeals} of the last 14 days have meal logs.`;
@@ -136,14 +148,48 @@ function buildActions(facts: DashboardNarrativeFacts): string[] {
   return actions.slice(0, 3);
 }
 
+function buildWatchNext(facts: DashboardNarrativeFacts): string[] {
+  const watchNext: string[] = [];
+  const confidence = buildConfidenceLevel(facts);
+
+  if (confidence !== 'high') {
+    watchNext.push('Capture one short note for each meal this week so the nutrition estimates get sharper.');
+  }
+
+  if (facts.lowNutrients.includes('Protein')) {
+    watchNext.push('Watch breakfast and the post-nap meal for a protein anchor like curd, paneer, egg, or dal.');
+  }
+
+  if (facts.lowNutrients.includes('Iron')) {
+    watchNext.push('Keep pairing iron foods with vitamin C fruit after iron drops or the main meal.');
+  }
+
+  if (facts.lowNutrients.includes('Calcium')) {
+    watchNext.push('Check whether curd, paneer, ragi, or milk show up at least once most days.');
+  }
+
+  if (facts.averageMealsPerDay < 2.5) {
+    watchNext.push('Watch for a light or missing dinner pattern, since that often drops the daily meal average.');
+  }
+
+  if (watchNext.length === 0) {
+    watchNext.push('Keep the same meal rhythm and note detail level steady so the dashboard stays reliable.');
+  }
+
+  return watchNext.slice(0, 3);
+}
+
 export function buildRuleBasedDashboardNarrative(facts: DashboardNarrativeFacts): DashboardNarrative {
+  const confidenceLevel = buildConfidenceLevel(facts);
   return {
     headline: buildHeadline(facts),
     summary: buildSummary(facts),
     strengths: buildStrengths(facts),
     concerns: buildConcerns(facts),
     actions: buildActions(facts),
+    watchNext: buildWatchNext(facts),
     dataQuality: buildDataQuality(facts),
+    confidenceLevel,
     source: 'rule-based'
   };
 }
@@ -185,6 +231,13 @@ function sanitizeNarrative(payload: any, fallback: DashboardNarrative): Dashboar
   const actions = Array.isArray(payload.actions)
     ? payload.actions.filter((item: unknown): item is string => typeof item === 'string' && item.trim().length > 0)
     : fallback.actions;
+  const watchNext = Array.isArray(payload.watchNext)
+    ? payload.watchNext.filter((item: unknown): item is string => typeof item === 'string' && item.trim().length > 0)
+    : fallback.watchNext;
+  const confidenceLevel =
+    payload.confidenceLevel === 'high' || payload.confidenceLevel === 'medium' || payload.confidenceLevel === 'low'
+      ? payload.confidenceLevel
+      : fallback.confidenceLevel;
 
   if (!headline || !summary || strengths.length === 0 || actions.length === 0) {
     return null;
@@ -196,7 +249,9 @@ function sanitizeNarrative(payload: any, fallback: DashboardNarrative): Dashboar
     strengths: strengths.slice(0, 3),
     concerns: concerns.slice(0, 3),
     actions: actions.slice(0, 3),
+    watchNext: watchNext.slice(0, 3),
     dataQuality,
+    confidenceLevel,
     source: 'openai'
   };
 }
@@ -225,7 +280,7 @@ export async function buildDashboardNarrative(facts: DashboardNarrativeFacts): P
               {
                 type: 'input_text',
                 text:
-                  'You write concise parent dashboard summaries for toddler meal and care tracking. Be factual, cautious, and non-diagnostic. Mention that nutrition is inferred from logged meals when relevant. Output JSON only with keys: headline, summary, strengths, concerns, actions, dataQuality. strengths/concerns/actions must be arrays of 2 or 3 short strings.'
+                  'You write concise parent dashboard summaries for toddler meal and care tracking. Be factual, cautious, and non-diagnostic. Mention that nutrition is inferred from logged meals when relevant. Output JSON only with keys: headline, summary, strengths, concerns, actions, watchNext, dataQuality, confidenceLevel. strengths/concerns/actions/watchNext must be arrays of 2 or 3 short strings, and confidenceLevel must be one of high, medium, or low.'
               }
             ]
           },

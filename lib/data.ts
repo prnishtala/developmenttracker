@@ -1,6 +1,6 @@
 import { format, getDay, parseISO, subDays } from 'date-fns';
 import { buildDashboardNarrative } from '@/lib/dashboard-summary';
-import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
+import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MEAL_TYPES, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
 import {
   addNutrients,
   IRON_DROPS_ELEMENTAL_IRON_MG,
@@ -49,6 +49,20 @@ function timeToMinutes(timeValue: string | null): number | null {
   const minutes = Number(mm);
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
   return hours * 60 + minutes;
+}
+
+function minutesToClock(minutes: number): string {
+  const clamped = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(clamped / 60);
+  const mins = clamped % 60;
+  const suffix = hours >= 12 ? 'pm' : 'am';
+  const displayHour = hours % 12 || 12;
+  return `${displayHour}:${String(mins).padStart(2, '0')} ${suffix}`;
+}
+
+function averageMinutes(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function napEntryMinutes(entry: {
@@ -330,11 +344,13 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
 
   const foodByDay = new Map<string, Set<string>>();
   const mealsByDay = new Map<string, number>();
+  const mealSlotCounts = new Map<string, number>();
   const caloriesByDay = new Map<string, number>();
   const careByDay = new Map<string, number>();
   const supplementIronByDay = new Map<string, number>();
   const napMinutesByDay = new Map<string, number>();
   const napCountByDay = new Map<string, number>();
+  const napStartByDay = new Map<string, number>();
   const nutrientByDay = new Map<string, ReturnType<typeof zeroNutrients>>();
   const totalLoggedNutrients = zeroNutrients();
   const distinctFoods = new Set<string>();
@@ -353,11 +369,17 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     const key = dateKey(subDays(today, i));
     foodByDay.set(key, new Set());
     mealsByDay.set(key, 0);
+    for (const mealType of MEAL_TYPES) {
+      if (!mealSlotCounts.has(mealType)) {
+        mealSlotCounts.set(mealType, 0);
+      }
+    }
     caloriesByDay.set(key, 0);
     careByDay.set(key, 0);
     supplementIronByDay.set(key, 0);
     napMinutesByDay.set(key, 0);
     napCountByDay.set(key, 0);
+    napStartByDay.set(key, Number.POSITIVE_INFINITY);
     nutrientByDay.set(key, zeroNutrients());
   }
 
@@ -406,6 +428,10 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     for (const food of recognizedFoods) {
       foodBucket?.add(food);
       distinctFoods.add(food);
+    }
+
+    if (MEAL_TYPES.includes(item.meal_type as (typeof MEAL_TYPES)[number])) {
+      mealSlotCounts.set(item.meal_type, (mealSlotCounts.get(item.meal_type) ?? 0) + 1);
     }
 
     mealsByDay.set(item.date, (mealsByDay.get(item.date) ?? 0) + 1);
@@ -458,6 +484,10 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     });
     napMinutesByDay.set(nap.date, (napMinutesByDay.get(nap.date) ?? 0) + minutes);
     napCountByDay.set(nap.date, (napCountByDay.get(nap.date) ?? 0) + 1);
+    const startMinutes = timeToMinutes(nap.start_time);
+    if (startMinutes !== null) {
+      napStartByDay.set(nap.date, Math.min(napStartByDay.get(nap.date) ?? Number.POSITIVE_INFINITY, startMinutes));
+    }
   }
 
   const totalMealsLogged = Array.from(mealsByDay.values()).reduce((sum, value) => sum + value, 0);
@@ -607,6 +637,50 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       ? `Care routines were logged on ${careDaysLogged} of the last 14 days.`
       : `Care routines were logged on ${careDaysLogged} of the last 14 days, so some consistency may still be missing.`;
 
+  const mealCoverageRows = MEAL_TYPES.map((mealType) => ({
+    mealType,
+    count: mealSlotCounts.get(mealType) ?? 0
+  }));
+  const mostLoggedMeal = [...mealCoverageRows].sort((a, b) => b.count - a.count)[0];
+  const leastLoggedMeal = [...mealCoverageRows].sort((a, b) => a.count - b.count)[0];
+
+  const routineInsights: string[] = [];
+  const napStartCandidates = Array.from(napStartByDay.values()).filter((value) => Number.isFinite(value));
+  const averageNapStart = averageMinutes(napStartCandidates);
+  if (averageNapStart !== null) {
+    const avgNapDuration = Math.round(averageNapMinutes);
+    routineInsights.push(`The first nap usually starts around ${minutesToClock(Math.round(averageNapStart))} and lasts about ${avgNapDuration} minutes.`);
+  }
+
+  if (mostLoggedMeal) {
+    routineInsights.push(
+      `${mostLoggedMeal.mealType} is the most consistently captured meal slot (${mostLoggedMeal.count}/14 days).`
+    );
+  }
+
+  if (leastLoggedMeal) {
+    routineInsights.push(
+      `${leastLoggedMeal.mealType} is the least consistently logged meal slot, so that is a good place for a quick note when it happens.`
+    );
+  }
+
+  if (mealEntries > 0 && notedMeals / mealEntries < 0.75) {
+    routineInsights.push('A short note for each meal would make the day rhythm much easier to interpret later.');
+  }
+
+  const confidenceLevel =
+    daysWithMeals >= 10 && notesCoveragePercent >= 75 && recognizableMealsPercent >= 60
+      ? 'high'
+      : daysWithMeals >= 7 && notesCoveragePercent >= 50 && recognizableMealsPercent >= 40
+        ? 'medium'
+        : 'low';
+  const confidenceReason =
+    confidenceLevel === 'high'
+      ? 'Meal logging is detailed enough for the AI to estimate nutrients with good confidence.'
+      : confidenceLevel === 'medium'
+        ? 'Some meals are well described, but a few notes are still too brief or use unfamiliar food names.'
+        : 'The meal logs are still sparse or too brief for nutrient estimates to be very precise.';
+
   const narrative = await buildDashboardNarrative({
     snapshotDate: snapshotKey,
     daysWithMeals,
@@ -676,6 +750,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       totalMinutes,
       naps: napCountByDay.get(date) ?? 0
     })),
+    routineInsights,
     summaryCards,
     narrative,
     nutritionSnapshot: {
@@ -686,6 +761,8 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
             ? 'openai'
             : 'heuristic',
       latestDate: snapshotKey,
+      confidenceLevel,
+      confidenceReason,
       supplementIronMg: supplementIronMgTotal,
       supplementIronDays,
       estimated: snapshotEstimated,
