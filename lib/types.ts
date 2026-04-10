@@ -81,7 +81,10 @@ export type DashboardData = {
   summaryCards: DashboardSignal[];
   narrative: DashboardNarrative;
   nutritionSnapshot: {
+    calculationSource: 'openai' | 'mixed' | 'heuristic';
     latestDate: string;
+    supplementIronMg: number;
+    supplementIronDays: number;
     estimated: {
       calories: number;
       protein_g: number;

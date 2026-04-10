@@ -13,7 +13,9 @@ export async function POST(request: NextRequest) {
       mealNotes: string | null;
     };
 
-    if (!date || !mealType) {
+    const normalizedMealType = typeof mealType === 'string' ? mealType.trim() : '';
+
+    if (!date || !normalizedMealType) {
       return NextResponse.json({ error: 'date and mealType are required' }, { status: 400 });
     }
 
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.from('nutrition_logs').upsert(
       {
         date,
-        meal_type: mealType,
+        meal_type: normalizedMealType,
         had_meal: hadMeal,
         quantity: hadMeal ? quantity : null,
         meal_notes: hadMeal ? (mealNotes?.trim() || null) : null
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
       eventType: 'nutrition_log',
       action: 'upsert',
       entityType: 'nutrition_logs',
-      entityId: mealType,
+      entityId: normalizedMealType,
       eventDate: date,
       payload: {
         hadMeal,

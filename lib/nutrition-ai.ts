@@ -8,6 +8,9 @@ type NutrientProfile = {
   vitamin_c_mg: number;
 };
 
+export type NutritionConfidence = 'high' | 'medium' | 'low';
+export type NutritionEstimateSource = 'openai' | 'heuristic';
+
 type FoodProfile = {
   key: string;
   label: string;
@@ -132,7 +135,16 @@ const TODDLER_TARGETS = {
   vitamin_c_mg: 15
 } as const;
 
+export const IRON_DROPS_ELEMENTAL_IRON_MG = 25;
+export const MULTIVITAMIN_ELEMENTAL_IRON_MG = 10;
+
 export type NutrientEstimate = NutrientProfile;
+
+export type MealNutritionEstimate = NutrientEstimate & {
+  recognizedFoods: string[];
+  confidence: NutritionConfidence;
+  source: NutritionEstimateSource;
+};
 
 export function zeroNutrients(): NutrientEstimate {
   return { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, iron_mg: 0, calcium_mg: 0, vitamin_c_mg: 0 };
@@ -161,17 +173,42 @@ function parseAmountFromNotes(notes: string, aliases: string[]): number {
   return 1;
 }
 
-export function estimateNutritionFromNote(note: string | null, quantity: string | null): NutrientEstimate {
-  if (!note || !note.trim()) return zeroNutrients();
+function deriveConfidence(recognizedFoods: string[], note: string | null): NutritionConfidence {
+  if (!note || !note.trim()) {
+    return 'low';
+  }
+
+  if (recognizedFoods.length >= 2) {
+    return 'high';
+  }
+
+  if (recognizedFoods.length === 1) {
+    return 'medium';
+  }
+
+  return 'low';
+}
+
+export function estimateNutritionFromNoteHeuristic(note: string | null, quantity: string | null): MealNutritionEstimate {
+  if (!note || !note.trim()) {
+    return {
+      ...zeroNutrients(),
+      recognizedFoods: [],
+      confidence: 'low',
+      source: 'heuristic'
+    };
+  }
 
   const text = note.toLowerCase();
   const multiplier = parseQuantityMultiplier(quantity);
   const totals = zeroNutrients();
+  const recognizedFoods: string[] = [];
 
   for (const food of FOOD_CATALOG) {
     const found = food.aliases.some((alias) => text.includes(alias));
     if (!found) continue;
 
+    recognizedFoods.push(food.label);
     const amount = parseAmountFromNotes(text, food.aliases);
     const factor = (amount / food.baseAmount) * multiplier;
     totals.calories += food.nutrientsPerBase.calories * factor;
@@ -183,7 +220,13 @@ export function estimateNutritionFromNote(note: string | null, quantity: string 
     totals.vitamin_c_mg += food.nutrientsPerBase.vitamin_c_mg * factor;
   }
 
-  return totals;
+  const rounded = roundNutrients(totals);
+  return {
+    ...rounded,
+    recognizedFoods,
+    confidence: deriveConfidence(recognizedFoods, note),
+    source: 'heuristic'
+  };
 }
 
 export function extractRecognizedFoods(note: string | null): string[] {

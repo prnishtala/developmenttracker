@@ -3,7 +3,57 @@
 @tailwind utilities;
 
 body {
-  background: linear-gradient(180deg, #f8f3e9 0%, #f7faf2 100%);
-  color: #0f172a;
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.14), transparent 32%),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.14), transparent 28%),
+    linear-gradient(180deg, #08111f 0%, #0d1726 45%, #101a28 100%);
+  color: #e2e8f0;
   min-height: 100vh;
+}
+
+@layer components {
+  .futuristic-shell {
+    @apply relative min-h-screen overflow-hidden bg-slate-950 text-slate-100;
+  }
+
+  .futuristic-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 95%);
+    opacity: 0.4;
+  }
+
+  .futuristic-panel {
+    @apply rounded-[28px] border border-white/10 bg-white/10 shadow-[0_24px_90px_rgba(2,6,23,0.35)] backdrop-blur-xl;
+  }
+
+  .futuristic-input {
+    @apply h-11 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-400/20;
+  }
+
+  .futuristic-button {
+    @apply inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-semibold transition;
+  }
+
+  .futuristic-chip {
+    @apply inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-slate-100;
+  }
+
+  .futuristic-tab {
+    @apply h-12 rounded-2xl px-3 text-sm font-semibold transition;
+  }
+
+  .futuristic-tab-active {
+    @apply bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-[0_12px_40px_rgba(34,211,238,0.25)];
+  }
+
+  .futuristic-tab-inactive {
+    @apply border border-white/10 bg-white/10 text-slate-200 hover:bg-white/20;
+  }
 }

@@ -13,7 +13,14 @@ export const LANGUAGE_SKILLS = ['Vocabulary', 'Expressive Language', 'Receptive 
 export const MOTOR_SKILLS = ['Gross Motor', 'Fine Motor'];
 export const OUTDOOR_ACTIVITY_KEYWORDS = ['outdoor'];
 
-export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Evening snacks'] as const;
+export const MEAL_TYPES = [
+  'Breakfast',
+  'Mid-morning snack',
+  'Lunch',
+  'Pre-dinner snack',
+  'Dinner',
+  'A2 milk'
+] as const;
 export const QUANTITY_OPTIONS = ['Low', 'Normal', 'High'] as const;
 
 export const VITAMIN_C_FRUITS = ['Orange', 'Mosambi', 'Guava', 'Kiwi', 'Strawberry', 'Papaya'] as const;

@@ -3,12 +3,13 @@ import { buildDashboardNarrative } from '@/lib/dashboard-summary';
 import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
 import {
   addNutrients,
-  estimateNutritionFromNote,
-  extractRecognizedFoods,
+  IRON_DROPS_ELEMENTAL_IRON_MG,
   getToddlerTargets,
+  MULTIVITAMIN_ELEMENTAL_IRON_MG,
   roundNutrients,
   zeroNutrients
 } from '@/lib/nutrition-ai';
+import { estimateMealNutritionBatch, type MealNutritionInput } from '@/lib/nutrition-openai';
 import {
   ActivityWithLog,
   AuditLog,
@@ -269,7 +270,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       .order('date', { ascending: true }),
     supabase
       .from('nutrition_logs')
-      .select('date, meal_type, had_meal, quantity, meal_notes')
+      .select('id, date, meal_type, had_meal, quantity, meal_notes')
       .gte('date', last14)
       .order('date', { ascending: true }),
     supabase
@@ -331,6 +332,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
   const mealsByDay = new Map<string, number>();
   const caloriesByDay = new Map<string, number>();
   const careByDay = new Map<string, number>();
+  const supplementIronByDay = new Map<string, number>();
   const napMinutesByDay = new Map<string, number>();
   const napCountByDay = new Map<string, number>();
   const nutrientByDay = new Map<string, ReturnType<typeof zeroNutrients>>();
@@ -341,6 +343,8 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
   let multivitaminDays = 0;
   let vitaminCDays = 0;
   let bathDays = 0;
+  let supplementIronMgTotal = 0;
+  let supplementIronDays = 0;
   let mealEntries = 0;
   let notedMeals = 0;
   let recognizableMeals = 0;
@@ -351,37 +355,60 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     mealsByDay.set(key, 0);
     caloriesByDay.set(key, 0);
     careByDay.set(key, 0);
+    supplementIronByDay.set(key, 0);
     napMinutesByDay.set(key, 0);
     napCountByDay.set(key, 0);
     nutrientByDay.set(key, zeroNutrients());
   }
 
+  const mealInputs: MealNutritionInput[] = (nutrition14 ?? [])
+    .filter((item) => item.had_meal)
+    .map((item) => ({
+      id: item.id,
+      date: item.date,
+      mealType: item.meal_type,
+      quantity: item.quantity,
+      mealNotes: item.meal_notes
+    }));
+
+  const mealEstimates = await estimateMealNutritionBatch(mealInputs);
+
+  let openAiMealCount = 0;
+  let heuristicMealCount = 0;
+
   for (const item of nutrition14 ?? []) {
     if (!item.had_meal) continue;
     mealEntries += 1;
 
-    if (!foodByDay.has(item.date)) {
-      foodByDay.set(item.date, new Set());
-    }
-
-    const recognizedFoods = extractRecognizedFoods(item.meal_notes);
     if (item.meal_notes?.trim()) {
       notedMeals += 1;
     }
 
-    if (recognizedFoods.length > 0) {
-      recognizableMeals += 1;
-      for (const food of recognizedFoods) {
-        foodByDay.get(item.date)?.add(food);
-        distinctFoods.add(food);
-      }
+    const estimated =
+      mealEstimates.get(item.id) ?? {
+        ...zeroNutrients(),
+        recognizedFoods: [],
+        confidence: 'low' as const,
+        source: 'heuristic' as const
+      };
+
+    if (estimated.source === 'openai') {
+      openAiMealCount += 1;
     } else {
-      foodByDay.get(item.date)?.add(item.meal_type);
+      heuristicMealCount += 1;
+    }
+
+    const recognizedFoods = estimated.recognizedFoods.length > 0 ? estimated.recognizedFoods : [item.meal_type];
+    if (estimated.recognizedFoods.length > 0) {
+      recognizableMeals += 1;
+    }
+    const foodBucket = foodByDay.get(item.date);
+    for (const food of recognizedFoods) {
+      foodBucket?.add(food);
+      distinctFoods.add(food);
     }
 
     mealsByDay.set(item.date, (mealsByDay.get(item.date) ?? 0) + 1);
-
-    const estimated = estimateNutritionFromNote(item.meal_notes, item.quantity);
     caloriesByDay.set(item.date, (caloriesByDay.get(item.date) ?? 0) + estimated.calories);
 
     if (!nutrientByDay.has(item.date)) {
@@ -393,13 +420,16 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
 
   for (const care of care14 ?? []) {
     let careCount = 0;
+    let supplementIronMg = 0;
     if (care.iron_drops) {
       careCount += 1;
       ironDays += 1;
+      supplementIronMg += IRON_DROPS_ELEMENTAL_IRON_MG;
     }
     if (care.multivitamin_drops) {
       careCount += 1;
       multivitaminDays += 1;
+      supplementIronMg += MULTIVITAMIN_ELEMENTAL_IRON_MG;
     }
     if (care.vitamin_c_given) {
       careCount += 1;
@@ -410,6 +440,13 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       bathDays += 1;
     }
     careByDay.set(care.date, careCount);
+    supplementIronByDay.set(care.date, supplementIronMg);
+    if (supplementIronMg > 0) {
+      supplementIronMgTotal += supplementIronMg;
+      supplementIronDays += 1;
+      nutrientByDay.get(care.date)!.iron_mg += supplementIronMg;
+      totalLoggedNutrients.iron_mg += supplementIronMg;
+    }
   }
 
   for (const nap of nap14 ?? []) {
@@ -425,12 +462,15 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
 
   const totalMealsLogged = Array.from(mealsByDay.values()).reduce((sum, value) => sum + value, 0);
   const daysWithMeals = Array.from(mealsByDay.values()).filter((value) => value > 0).length;
+  const nutritionActiveDays = Array.from(mealsByDay.keys()).filter(
+    (date) => (mealsByDay.get(date) ?? 0) > 0 || (supplementIronByDay.get(date) ?? 0) > 0
+  ).length;
   const fullyLoggedDays = Array.from(mealsByDay.values()).filter((value) => value >= 3).length;
   const averageMealsPerDay = Number(average(totalMealsLogged, 14).toFixed(1));
   const notesCoveragePercent = percentage(notedMeals, mealEntries);
   const recognizableMealsPercent = percentage(recognizableMeals, mealEntries);
 
-  const loggedDayDivisor = Math.max(daysWithMeals, 1);
+  const loggedDayDivisor = Math.max(nutritionActiveDays, 1);
   const averageEstimated = roundNutrients({
     calories: average(totalLoggedNutrients.calories, loggedDayDivisor),
     protein_g: average(totalLoggedNutrients.protein_g, loggedDayDivisor),
@@ -444,7 +484,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
   const todayKey = dateKey(today);
   const loggedSnapshotKey =
     Array.from(mealsByDay.entries())
-      .filter(([, meals]) => meals > 0)
+      .filter(([date, meals]) => meals > 0 || (supplementIronByDay.get(date) ?? 0) > 0)
       .map(([date]) => date)
       .slice(-1)[0] ?? todayKey;
   const snapshotKey = (mealsByDay.get(todayKey) ?? 0) > 0 ? todayKey : loggedSnapshotKey;
@@ -516,6 +556,12 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     nutritionInsights.push(`Only ${daysWithMeals} of the last 14 days have meal logs, so nutrition insight is directional rather than complete.`);
   }
 
+  if (supplementIronMgTotal > 0) {
+    nutritionInsights.push(
+      `Iron supplements contributed ${supplementIronMgTotal} mg of elemental iron across ${supplementIronDays} care days: 25 mg from iron drops and 10 mg from multivitamin on days given.`
+    );
+  }
+
   if (averageEstimated.calories < targets.calories * 0.8) {
     nutritionInsights.push('Average calories look low on logged days. A dense snack like banana with curd, paneer, or egg can help.');
   } else if (averageEstimated.calories > targets.calories * 1.2) {
@@ -570,6 +616,8 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     recognizableMealsPercent,
     averageCalories: averageEstimated.calories,
     calorieCoveragePercent,
+    supplementIronMg: supplementIronMgTotal,
+    supplementIronDays,
     lowNutrients,
     strongNutrients,
     developmentSummary,
@@ -612,7 +660,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       .map(([skill, minutes]) => ({ skill, minutes }))
       .sort((a, b) => b.minutes - a.minutes),
     languageTrend: Array.from(languageByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
-    foodDiversity: Array.from(foodByDay.entries()).map(([date, groups]) => ({ date, count: groups.size })),
+    foodDiversity: Array.from(foodByDay.entries()).map(([date, foods]) => ({ date, count: foods.size })),
     calorieTrend: Array.from(caloriesByDay.entries()).map(([date, calories]) => ({ date, calories: Math.round(calories) })),
     motorTrend: Array.from(motorByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
     mealCompletionTrend: Array.from(mealsByDay.entries()).map(([date, meals]) => ({ date, meals })),
@@ -631,7 +679,15 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     summaryCards,
     narrative,
     nutritionSnapshot: {
+      calculationSource:
+        openAiMealCount > 0 && heuristicMealCount > 0
+          ? 'mixed'
+          : openAiMealCount > 0
+            ? 'openai'
+            : 'heuristic',
       latestDate: snapshotKey,
+      supplementIronMg: supplementIronMgTotal,
+      supplementIronDays,
       estimated: snapshotEstimated,
       targets,
       comparison: nutritionComparison,

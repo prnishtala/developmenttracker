@@ -35,6 +35,12 @@ function metricLabel(value: number, unit: string): string {
   return `${value}${unit}`;
 }
 
+function calculationSourceLabel(source: DashboardData['nutritionSnapshot']['calculationSource']): string {
+  if (source === 'openai') return 'AI text parser';
+  if (source === 'mixed') return 'AI + fallback parser';
+  return 'Fallback parser';
+}
+
 export function DashboardCharts({ data }: DashboardChartsProps) {
   return (
     <div className="space-y-6">
@@ -102,6 +108,14 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Nutrition Coverage</p>
               <h3 className="mt-2 text-2xl font-semibold text-slate-950">What she is getting vs. missing</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Nutrient values are estimated from the nanny&apos;s meal notes using {calculationSourceLabel(data.nutritionSnapshot.calculationSource)}.
+              </p>
+              {data.nutritionSnapshot.supplementIronMg > 0 && (
+                <p className="mt-2 text-sm text-slate-600">
+                  Iron totals include {data.nutritionSnapshot.supplementIronMg} mg from supplements across {data.nutritionSnapshot.supplementIronDays} care days.
+                </p>
+              )}
             </div>
             <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               Latest meal log: {formatShortDate(data.nutritionSnapshot.latestDate)}

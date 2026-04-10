@@ -9,6 +9,8 @@ export type DashboardNarrativeFacts = {
   recognizableMealsPercent: number;
   averageCalories: number;
   calorieCoveragePercent: number;
+  supplementIronMg: number;
+  supplementIronDays: number;
   lowNutrients: string[];
   strongNutrients: string[];
   developmentSummary: string;
@@ -53,7 +55,12 @@ function buildSummary(facts: DashboardNarrativeFacts): string {
       ? 'Calorie intake appears close to the toddler target on logged days.'
       : 'Calorie intake appears below the toddler target on logged days.';
 
-  return `${calorieText} ${facts.developmentSummary} ${facts.careSummary}`;
+  const supplementText =
+    facts.supplementIronMg > 0
+      ? `Iron drops and multivitamin drops add ${facts.supplementIronMg} mg elemental iron across ${facts.supplementIronDays} care days.`
+      : '';
+
+  return `${calorieText} ${supplementText} ${facts.developmentSummary} ${facts.careSummary}`.trim();
 }
 
 function buildStrengths(facts: DashboardNarrativeFacts): string[] {
@@ -105,6 +112,9 @@ function buildActions(facts: DashboardNarrativeFacts): string[] {
 
   if (facts.lowNutrients.includes('Iron')) {
     actions.push('Pair iron foods like lentils or leafy dishes with a vitamin C fruit.');
+    if (facts.supplementIronMg > 0) {
+      actions.push('Remember that iron drops and multivitamins are already adding supplemental iron on care days.');
+    }
   }
 
   if (facts.lowNutrients.includes('Calcium')) {

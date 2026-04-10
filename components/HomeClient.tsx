@@ -610,114 +610,156 @@ export function HomeClient({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-2xl bg-brand-500 p-4 text-white shadow-sm">
-        <div className="absolute inset-0 bg-[url('/jungle-banner.svg')] bg-cover bg-center opacity-35" />
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/60 via-lime-800/45 to-teal-900/60" />
-        <div className="relative">
-          <h1 className="text-2xl font-bold">Ahana&apos;s Development Tracker</h1>
-          <p className="mt-1 text-sm opacity-90">Daily checklist for {date}</p>
-          <p className="text-xs opacity-80">Timezone: {clientTimeZone}</p>
-          {pendingSyncCount > 0 && (
-            <p className="mt-1 text-xs font-semibold text-amber-100">
-              {pendingSyncCount} offline updates pending sync.
-            </p>
-          )}
-          {isOffline && <p className="text-xs font-semibold text-amber-100">You are offline. Changes will sync later.</p>}
-        </div>
-        <div className="relative mt-4 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-xl bg-white/20 p-3">
-            <p className="text-xs uppercase">Development completion</p>
-            <p className="text-2xl font-bold">{completionPercentage}%</p>
-          </div>
-          <div className="rounded-xl bg-white/20 p-3">
-            <p className="text-xs uppercase">Weekly streak</p>
-            <p className="text-2xl font-bold">{insights.weeklyStreak} days</p>
-          </div>
-        </div>
-        <div className="relative mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={enablePushNotifications}
-            className="rounded-xl bg-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/30"
-          >
-            {pushStatus === 'enabled' ? 'Push reminders enabled' : 'Enable push reminders'}
-          </button>
-          {pushMessage && <p className="self-center text-xs text-emerald-100">{pushMessage}</p>}
-        </div>
-      </section>
+    <div className="futuristic-shell">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-[-8rem] top-10 h-72 w-72 rounded-full bg-cyan-400/15 blur-3xl" />
+        <div className="absolute right-[-6rem] top-24 h-80 w-80 rounded-full bg-emerald-400/15 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
+      </div>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-          Select Date (up to 1 week back)
-          <input
-            type="date"
-            value={date}
-            min={minDate}
-            max={maxDate}
-            onChange={(event) => onDateChange(event.target.value)}
-            className="h-11 rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm text-slate-900"
-          />
-        </label>
-      </section>
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        <section className="futuristic-panel relative overflow-hidden p-5 sm:p-6">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(34,211,238,0.12),transparent_35%,rgba(16,185,129,0.12)_70%,transparent)]" />
+          <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="futuristic-chip bg-cyan-400/20 text-cyan-100">Today</span>
+                <span className="futuristic-chip">{clientTimeZone}</span>
+                <span className="futuristic-chip">
+                  {isOffline ? 'Offline mode' : pendingSyncCount > 0 ? `${pendingSyncCount} pending sync` : 'Live sync'}
+                </span>
+              </div>
 
-      {insights.noOutdoorFor3Days && (
-        <p className="rounded-xl bg-amber-100 p-3 text-sm font-medium text-amber-900">
-          Alert: No outdoor activity logged for 3 consecutive days.
-        </p>
-      )}
-
-      {insights.lowLanguageFor3Days && (
-        <p className="rounded-xl bg-rose-100 p-3 text-sm font-medium text-rose-900">
-          Alert: Language activities have stayed under 15 minutes for 3 consecutive days.
-        </p>
-      )}
-
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {(Object.keys(TAB_LABELS) as TabKey[]).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`h-12 rounded-xl px-3 text-sm font-semibold ${
-              activeTab === tab ? 'bg-brand-500 text-white' : 'bg-white text-slate-700 shadow-sm'
-            }`}
-          >
-            {TAB_LABELS[tab]}
-          </button>
-        ))}
-      </section>
-
-      {activeTab === 'development' && (
-        <section className="space-y-4">
-          {isWeekend(date) && (
-            <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
-              Weekday schedule is set for Monday to Friday. No planned development activities for weekends.
-            </p>
-          )}
-          {Object.entries(groupedActivities).map(([category, items]) => (
-            <div key={category} className="space-y-2">
-              <h2 className="text-lg font-semibold text-slate-900">{category}</h2>
               <div className="space-y-2">
-                {items.map((activity) => (
-                  <ActivityCard key={activity.id} activity={activity} onChange={upsertDailyLog} />
-                ))}
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100/70">Ahana&apos;s Growth Hub</p>
+                <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                  Log the story of the day, not just the checkbox.
+                </h1>
+                <p className="max-w-2xl text-sm leading-6 text-slate-300">
+                  The more detail you type about meals, snacks, fruit, and timing, the better the AI can turn it into
+                  clear nutrition guidance for the parent. Short notes like what she ate, how much, and when she napped
+                  are especially helpful.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={enablePushNotifications}
+                  className="futuristic-button bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-[0_16px_45px_rgba(34,211,238,0.22)]"
+                >
+                  {pushStatus === 'enabled' ? 'Push reminders enabled' : 'Enable push reminders'}
+                </button>
+                {pushMessage && <span className="self-center text-xs text-cyan-100">{pushMessage}</span>}
               </div>
             </div>
-          ))}
-          {!isWeekend(date) && activities.length === 0 && (
-            <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700">No activities available.</p>
-          )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.22)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Development completion</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{completionPercentage}%</p>
+                <p className="mt-1 text-xs text-slate-400">Planned activities completed today</p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.22)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Weekly streak</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{insights.weeklyStreak}</p>
+                <p className="mt-1 text-xs text-slate-400">Days in a row with activity</p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.22)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Meals logged</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{nutritionLogs.filter((log) => log.had_meal).length}</p>
+                <p className="mt-1 text-xs text-slate-400">Today&apos;s meal entries</p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.22)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Nap entries</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{napLogs.length}</p>
+                <p className="mt-1 text-xs text-slate-400">Tracked naps for today</p>
+              </div>
+            </div>
+          </div>
         </section>
-      )}
 
-      {activeTab === 'nutrition' && <NutritionSection logs={nutritionLogs} onChange={upsertNutritionLog} />}
+        <section className="futuristic-panel p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Select Date
+              <input
+                type="date"
+                value={date}
+                min={minDate}
+                max={maxDate}
+                onChange={(event) => onDateChange(event.target.value)}
+                className="futuristic-input w-full sm:w-56"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <span className="futuristic-chip">Monday to Friday plan</span>
+              <span className="futuristic-chip">Offline-safe logging</span>
+            </div>
+          </div>
+        </section>
 
-      {activeTab === 'care' && <CareSection log={careLog} onChange={upsertCareLog} />}
+        {insights.noOutdoorFor3Days && (
+          <p className="futuristic-panel border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+            Alert: No outdoor activity logged for 3 consecutive days.
+          </p>
+        )}
 
-      {activeTab === 'naps' && <NapSection naps={napLogs} onAdd={addNap} onUpdate={updateNap} onDelete={deleteNap} />}
+        {insights.lowLanguageFor3Days && (
+          <p className="futuristic-panel border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+            Alert: Language activities have stayed under 15 minutes for 3 consecutive days.
+          </p>
+        )}
 
-      {isPending && <p className="text-center text-xs text-slate-500">Saving...</p>}
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(Object.keys(TAB_LABELS) as TabKey[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`futuristic-tab ${activeTab === tab ? 'futuristic-tab-active' : 'futuristic-tab-inactive'}`}
+            >
+              {TAB_LABELS[tab]}
+            </button>
+          ))}
+        </section>
+
+        <section className="space-y-5">
+          {activeTab === 'development' && (
+            <div className="space-y-4">
+              {isWeekend(date) && (
+                <p className="futuristic-panel px-4 py-3 text-sm text-slate-200">
+                  Weekday schedule is set for Monday to Friday. No planned development activities for weekends.
+                </p>
+              )}
+              {Object.entries(groupedActivities).map(([category, items]) => (
+                <div key={category} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-white">{category}</h2>
+                    <span className="text-xs uppercase tracking-[0.18em] text-slate-400">{items.length} activities</span>
+                  </div>
+                  <div className="space-y-3">
+                    {items.map((activity) => (
+                      <ActivityCard key={activity.id} activity={activity} onChange={upsertDailyLog} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {!isWeekend(date) && activities.length === 0 && (
+                <p className="futuristic-panel px-4 py-3 text-sm text-slate-200">No activities available.</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'nutrition' && <NutritionSection logs={nutritionLogs} onChange={upsertNutritionLog} />}
+
+          {activeTab === 'care' && <CareSection log={careLog} onChange={upsertCareLog} />}
+
+          {activeTab === 'naps' && <NapSection naps={napLogs} onAdd={addNap} onUpdate={updateNap} onDelete={deleteNap} />}
+        </section>
+
+        {isPending && <p className="text-center text-xs text-slate-400">Saving...</p>}
+      </div>
     </div>
   );
 }
