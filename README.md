@@ -34,6 +34,7 @@ Mobile-first public tracker for a 14-month-old child. Primary workflow is tap/se
   - Weekly streak
   - Alerts for outdoor/language consistency
 - Parent dashboard at `/dashboard` with charts
+- Parent dashboard with actionable nutrition coverage, strengths/concerns, and optional AI-written summary
 
 ## Project Structure
 
@@ -83,7 +84,11 @@ npm install
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+OPENAI_API_KEY=optional_openai_api_key
+OPENAI_MODEL=gpt-5.4-mini
 ```
+
+`OPENAI_API_KEY` is optional. If set, the parent dashboard will ask OpenAI to rewrite the computed signals into a tighter summary. Without it, the dashboard uses built-in rule-based summaries.
 
 3. Run:
 

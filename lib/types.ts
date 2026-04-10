@@ -48,6 +48,25 @@ export type ActivityWithLog = Activity & {
   log: DailyLog | null;
 };
 
+export type DashboardTone = 'good' | 'watch' | 'neutral';
+
+export type DashboardSignal = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: DashboardTone;
+};
+
+export type DashboardNarrative = {
+  headline: string;
+  summary: string;
+  strengths: string[];
+  concerns: string[];
+  actions: string[];
+  dataQuality: string;
+  source: 'rule-based' | 'openai';
+};
+
 export type DashboardData = {
   completion: { completed: number; missed: number };
   skillMinutes: { skill: string; minutes: number }[];
@@ -59,7 +78,10 @@ export type DashboardData = {
   medicineSummary: { label: string; value: number }[];
   careTrend: { date: string; careCount: number }[];
   napTrend: { date: string; totalMinutes: number; naps: number }[];
+  summaryCards: DashboardSignal[];
+  narrative: DashboardNarrative;
   nutritionSnapshot: {
+    latestDate: string;
     estimated: {
       calories: number;
       protein_g: number;
@@ -77,6 +99,20 @@ export type DashboardData = {
       vitamin_c_mg: number;
     };
     comparison: { nutrient: string; estimated: number; target: number; unit: string }[];
+    coverage: {
+      nutrient: string;
+      estimated: number;
+      target: number;
+      unit: string;
+      coveragePercent: number;
+      daysMetTarget: number;
+      tone: DashboardTone;
+    }[];
+    daysWithMeals: number;
+    fullyLoggedDays: number;
+    averageMealsPerDay: number;
+    notesCoveragePercent: number;
+    recognizableMealsPercent: number;
     insights: string[];
   };
 };

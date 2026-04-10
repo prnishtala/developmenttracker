@@ -1,13 +1,25 @@
 import { format, getDay, parseISO, subDays } from 'date-fns';
+import { buildDashboardNarrative } from '@/lib/dashboard-summary';
 import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
 import {
   addNutrients,
   estimateNutritionFromNote,
+  extractRecognizedFoods,
   getToddlerTargets,
   roundNutrients,
   zeroNutrients
 } from '@/lib/nutrition-ai';
-import { ActivityWithLog, AuditLog, CareLog, DashboardData, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
+import {
+  ActivityWithLog,
+  AuditLog,
+  CareLog,
+  DashboardData,
+  DashboardSignal,
+  DashboardTone,
+  HomeInsights,
+  NapLog,
+  NutritionLog
+} from '@/lib/types';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
 type LogWithActivity = {
@@ -58,6 +70,22 @@ function weekdayIndex(targetDate: string): number | null {
   const day = getDay(parseISO(targetDate));
   if (day < 1 || day > 5) return null;
   return day - 1;
+}
+
+function percentage(value: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((value / total) * 100);
+}
+
+function average(value: number, count: number): number {
+  if (count <= 0) return 0;
+  return value / count;
+}
+
+function toneFromCoverage(coveragePercent: number): DashboardTone {
+  if (coveragePercent >= 90) return 'good';
+  if (coveragePercent >= 70) return 'neutral';
+  return 'watch';
 }
 
 export async function getPlannedActivitiesForDate(targetDate: string): Promise<ActivityWithLog[]> {
@@ -306,11 +334,16 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
   const napMinutesByDay = new Map<string, number>();
   const napCountByDay = new Map<string, number>();
   const nutrientByDay = new Map<string, ReturnType<typeof zeroNutrients>>();
+  const totalLoggedNutrients = zeroNutrients();
+  const distinctFoods = new Set<string>();
 
   let ironDays = 0;
   let multivitaminDays = 0;
   let vitaminCDays = 0;
   let bathDays = 0;
+  let mealEntries = 0;
+  let notedMeals = 0;
+  let recognizableMeals = 0;
 
   for (let i = 13; i >= 0; i -= 1) {
     const key = dateKey(subDays(today, i));
@@ -325,10 +358,27 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
 
   for (const item of nutrition14 ?? []) {
     if (!item.had_meal) continue;
+    mealEntries += 1;
+
     if (!foodByDay.has(item.date)) {
       foodByDay.set(item.date, new Set());
     }
-    foodByDay.get(item.date)?.add(item.meal_type);
+
+    const recognizedFoods = extractRecognizedFoods(item.meal_notes);
+    if (item.meal_notes?.trim()) {
+      notedMeals += 1;
+    }
+
+    if (recognizedFoods.length > 0) {
+      recognizableMeals += 1;
+      for (const food of recognizedFoods) {
+        foodByDay.get(item.date)?.add(food);
+        distinctFoods.add(food);
+      }
+    } else {
+      foodByDay.get(item.date)?.add(item.meal_type);
+    }
+
     mealsByDay.set(item.date, (mealsByDay.get(item.date) ?? 0) + 1);
 
     const estimated = estimateNutritionFromNote(item.meal_notes, item.quantity);
@@ -338,6 +388,7 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       nutrientByDay.set(item.date, zeroNutrients());
     }
     addNutrients(nutrientByDay.get(item.date)!, estimated);
+    addNutrients(totalLoggedNutrients, estimated);
   }
 
   for (const care of care14 ?? []) {
@@ -372,10 +423,31 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     napCountByDay.set(nap.date, (napCountByDay.get(nap.date) ?? 0) + 1);
   }
 
+  const totalMealsLogged = Array.from(mealsByDay.values()).reduce((sum, value) => sum + value, 0);
+  const daysWithMeals = Array.from(mealsByDay.values()).filter((value) => value > 0).length;
+  const fullyLoggedDays = Array.from(mealsByDay.values()).filter((value) => value >= 3).length;
+  const averageMealsPerDay = Number(average(totalMealsLogged, 14).toFixed(1));
+  const notesCoveragePercent = percentage(notedMeals, mealEntries);
+  const recognizableMealsPercent = percentage(recognizableMeals, mealEntries);
+
+  const loggedDayDivisor = Math.max(daysWithMeals, 1);
+  const averageEstimated = roundNutrients({
+    calories: average(totalLoggedNutrients.calories, loggedDayDivisor),
+    protein_g: average(totalLoggedNutrients.protein_g, loggedDayDivisor),
+    carbs_g: average(totalLoggedNutrients.carbs_g, loggedDayDivisor),
+    fat_g: average(totalLoggedNutrients.fat_g, loggedDayDivisor),
+    iron_mg: average(totalLoggedNutrients.iron_mg, loggedDayDivisor),
+    calcium_mg: average(totalLoggedNutrients.calcium_mg, loggedDayDivisor),
+    vitamin_c_mg: average(totalLoggedNutrients.vitamin_c_mg, loggedDayDivisor)
+  });
+
   const todayKey = dateKey(today);
-  const snapshotKey = nutrientByDay.has(todayKey)
-    ? todayKey
-    : Array.from(nutrientByDay.keys()).sort().slice(-1)[0] ?? todayKey;
+  const loggedSnapshotKey =
+    Array.from(mealsByDay.entries())
+      .filter(([, meals]) => meals > 0)
+      .map(([date]) => date)
+      .slice(-1)[0] ?? todayKey;
+  const snapshotKey = (mealsByDay.get(todayKey) ?? 0) > 0 ? todayKey : loggedSnapshotKey;
   const snapshotEstimated = roundNutrients(nutrientByDay.get(snapshotKey) ?? zeroNutrients());
   const targets = getToddlerTargets();
 
@@ -387,27 +459,152 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     { nutrient: 'Vitamin C', estimated: snapshotEstimated.vitamin_c_mg, target: targets.vitamin_c_mg, unit: 'mg' }
   ];
 
+  const nutrientCoverage = [
+    {
+      nutrient: 'Calories',
+      estimated: averageEstimated.calories,
+      target: targets.calories,
+      unit: 'kcal',
+      daysMetTarget: Array.from(nutrientByDay.values()).filter((value) => value.calories >= targets.calories * 0.85).length
+    },
+    {
+      nutrient: 'Protein',
+      estimated: averageEstimated.protein_g,
+      target: targets.protein_g,
+      unit: 'g',
+      daysMetTarget: Array.from(nutrientByDay.values()).filter((value) => value.protein_g >= targets.protein_g).length
+    },
+    {
+      nutrient: 'Iron',
+      estimated: averageEstimated.iron_mg,
+      target: targets.iron_mg,
+      unit: 'mg',
+      daysMetTarget: Array.from(nutrientByDay.values()).filter((value) => value.iron_mg >= targets.iron_mg).length
+    },
+    {
+      nutrient: 'Calcium',
+      estimated: averageEstimated.calcium_mg,
+      target: targets.calcium_mg,
+      unit: 'mg',
+      daysMetTarget: Array.from(nutrientByDay.values()).filter((value) => value.calcium_mg >= targets.calcium_mg).length
+    },
+    {
+      nutrient: 'Vitamin C',
+      estimated: averageEstimated.vitamin_c_mg,
+      target: targets.vitamin_c_mg,
+      unit: 'mg',
+      daysMetTarget: Array.from(nutrientByDay.values()).filter((value) => value.vitamin_c_mg >= targets.vitamin_c_mg).length
+    }
+  ].map((item) => {
+    const coveragePercent = percentage(item.estimated, item.target);
+    return {
+      ...item,
+      coveragePercent,
+      tone: toneFromCoverage(coveragePercent)
+    };
+  });
+
+  const lowNutrients = nutrientCoverage
+    .filter((item) => item.nutrient !== 'Calories' && item.coveragePercent < 70)
+    .map((item) => item.nutrient);
+  const strongNutrients = nutrientCoverage
+    .filter((item) => item.nutrient !== 'Calories' && item.coveragePercent >= 90)
+    .map((item) => item.nutrient);
+
   const nutritionInsights: string[] = [];
-  if (snapshotEstimated.calories < targets.calories * 0.75) {
-    nutritionInsights.push('Calories appear below target. Add one dense snack like banana with curd or paneer.');
-  } else if (snapshotEstimated.calories > targets.calories * 1.2) {
-    nutritionInsights.push('Calories appear above target. Balance with more fruits and vegetables next meal.');
-  } else {
-    nutritionInsights.push('Calories are close to target range for the day.');
+  if (daysWithMeals < 7) {
+    nutritionInsights.push(`Only ${daysWithMeals} of the last 14 days have meal logs, so nutrition insight is directional rather than complete.`);
   }
 
-  if (snapshotEstimated.protein_g < targets.protein_g) {
-    nutritionInsights.push('Protein looks low. Consider adding dal, paneer, egg, or curd.');
+  if (averageEstimated.calories < targets.calories * 0.8) {
+    nutritionInsights.push('Average calories look low on logged days. A dense snack like banana with curd, paneer, or egg can help.');
+  } else if (averageEstimated.calories > targets.calories * 1.2) {
+    nutritionInsights.push('Average calories look high on logged days. Balance heavy meals with fruit and vegetables.');
+  } else {
+    nutritionInsights.push('Average calories are close to the daily target on logged days.');
   }
-  if (snapshotEstimated.iron_mg < targets.iron_mg) {
-    nutritionInsights.push('Iron looks low. Consider lentils, leafy foods, and pair with vitamin C fruit.');
+
+  if (lowNutrients.includes('Protein')) {
+    nutritionInsights.push('Protein is the clearest gap. Add dal, paneer, egg, or curd more consistently.');
   }
-  if (snapshotEstimated.calcium_mg < targets.calcium_mg) {
-    nutritionInsights.push('Calcium seems low. Add curd, paneer, or ragi-based foods.');
+  if (lowNutrients.includes('Iron')) {
+    nutritionInsights.push('Iron appears low. Use lentils or leafy foods and pair them with vitamin C fruit.');
+  }
+  if (lowNutrients.includes('Calcium')) {
+    nutritionInsights.push('Calcium seems light. Add curd, paneer, or ragi-based foods each day.');
+  }
+  if (recognizableMealsPercent < 60) {
+    nutritionInsights.push('A lot of meal notes cannot be mapped to known foods yet, so nutrient estimates may be understated.');
   }
   if (nutritionInsights.length === 1) {
-    nutritionInsights.push('Nutrition balance looks reasonable based on logged items and quantities.');
+    nutritionInsights.push('Nutrition balance looks reasonable based on the foods and quantities captured so far.');
   }
+
+  const recentLanguageMinutes = Array.from(languageByDay.values())
+    .slice(-7)
+    .reduce((sum, value) => sum + value, 0);
+  const recentMotorMinutes = Array.from(motorByDay.values())
+    .slice(-7)
+    .reduce((sum, value) => sum + value, 0);
+  const careDaysLogged = Array.from(careByDay.values()).filter((value) => value > 0).length;
+  const totalNapMinutes = Array.from(napMinutesByDay.values()).reduce((sum, value) => sum + value, 0);
+  const daysWithNaps = Array.from(napCountByDay.values()).filter((value) => value > 0).length;
+  const averageNapMinutes = Math.round(average(totalNapMinutes, Math.max(daysWithNaps, 1)));
+  const calorieCoveragePercent = percentage(averageEstimated.calories, targets.calories);
+
+  const developmentSummary =
+    recentLanguageMinutes + recentMotorMinutes >= 180
+      ? `Development activity stayed active this week with ${recentLanguageMinutes} language minutes and ${recentMotorMinutes} motor minutes.`
+      : `Development activity looks lighter this week with ${recentLanguageMinutes} language minutes and ${recentMotorMinutes} motor minutes.`;
+  const careSummary =
+    careDaysLogged >= 10
+      ? `Care routines were logged on ${careDaysLogged} of the last 14 days.`
+      : `Care routines were logged on ${careDaysLogged} of the last 14 days, so some consistency may still be missing.`;
+
+  const narrative = await buildDashboardNarrative({
+    snapshotDate: snapshotKey,
+    daysWithMeals,
+    fullyLoggedDays,
+    averageMealsPerDay,
+    notesCoveragePercent,
+    recognizableMealsPercent,
+    averageCalories: averageEstimated.calories,
+    calorieCoveragePercent,
+    lowNutrients,
+    strongNutrients,
+    developmentSummary,
+    careSummary
+  });
+
+  const summaryCards: DashboardSignal[] = [
+    {
+      label: 'Nutrition coverage',
+      value: `${calorieCoveragePercent}%`,
+      detail: `Average calories vs target across ${daysWithMeals} logged days.`,
+      tone: toneFromCoverage(calorieCoveragePercent)
+    },
+    {
+      label: 'Meal logging',
+      value: `${daysWithMeals}/14 days`,
+      detail: `${fullyLoggedDays} full 3-meal days. ${distinctFoods.size} foods recognized and notes on ${notesCoveragePercent}% of meals.`,
+      tone: daysWithMeals >= 10 ? 'good' : daysWithMeals >= 7 ? 'neutral' : 'watch'
+    },
+    {
+      label: 'Development',
+      value: `${recentLanguageMinutes + recentMotorMinutes} min`,
+      detail: `${recentLanguageMinutes} language and ${recentMotorMinutes} motor minutes in the last 7 days.`,
+      tone: recentLanguageMinutes + recentMotorMinutes >= 180 ? 'good' : 'neutral'
+    },
+    {
+      label: 'Care + naps',
+      value: `${careDaysLogged}/14 days`,
+      detail:
+        daysWithNaps > 0
+          ? `Average nap time is ${averageNapMinutes} minutes on days naps were logged.`
+          : 'No naps were logged in the last 14 days.',
+      tone: careDaysLogged >= 10 ? 'good' : careDaysLogged >= 7 ? 'neutral' : 'watch'
+    }
+  ];
 
   return {
     completion: { completed, missed },
@@ -431,10 +628,19 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       totalMinutes,
       naps: napCountByDay.get(date) ?? 0
     })),
+    summaryCards,
+    narrative,
     nutritionSnapshot: {
+      latestDate: snapshotKey,
       estimated: snapshotEstimated,
       targets,
       comparison: nutritionComparison,
+      coverage: nutrientCoverage,
+      daysWithMeals,
+      fullyLoggedDays,
+      averageMealsPerDay,
+      notesCoveragePercent,
+      recognizableMealsPercent,
       insights: nutritionInsights
     }
   };

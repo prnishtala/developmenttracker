@@ -10,6 +10,7 @@ type NutrientProfile = {
 
 type FoodProfile = {
   key: string;
+  label: string;
   aliases: string[];
   baseAmount: number;
   nutrientsPerBase: NutrientProfile;
@@ -18,72 +19,84 @@ type FoodProfile = {
 const FOOD_CATALOG: FoodProfile[] = [
   {
     key: 'idli',
+    label: 'Idli',
     aliases: ['idli', 'idlis'],
     baseAmount: 1,
     nutrientsPerBase: { calories: 58, protein_g: 2, carbs_g: 12, fat_g: 0.4, iron_mg: 0.3, calcium_mg: 8, vitamin_c_mg: 0 }
   },
   {
     key: 'dosa',
+    label: 'Dosa',
     aliases: ['dosa', 'dosai'],
     baseAmount: 1,
     nutrientsPerBase: { calories: 133, protein_g: 3.2, carbs_g: 20, fat_g: 4.5, iron_mg: 0.8, calcium_mg: 12, vitamin_c_mg: 0 }
   },
   {
     key: 'upma',
+    label: 'Upma',
     aliases: ['upma'],
     baseAmount: 0.5,
     nutrientsPerBase: { calories: 96, protein_g: 2.8, carbs_g: 16, fat_g: 2.6, iron_mg: 0.6, calcium_mg: 11, vitamin_c_mg: 2 }
   },
   {
     key: 'khichdi',
+    label: 'Khichdi',
     aliases: ['khichdi', 'khichri'],
     baseAmount: 0.5,
     nutrientsPerBase: { calories: 110, protein_g: 3.8, carbs_g: 18, fat_g: 2.3, iron_mg: 0.9, calcium_mg: 14, vitamin_c_mg: 2 }
   },
   {
     key: 'rice',
+    label: 'Rice',
     aliases: ['rice', 'curd rice', 'jeera rice'],
     baseAmount: 0.5,
     nutrientsPerBase: { calories: 103, protein_g: 2.1, carbs_g: 22, fat_g: 0.2, iron_mg: 0.2, calcium_mg: 5, vitamin_c_mg: 0 }
   },
   {
     key: 'dal',
+    label: 'Dal',
     aliases: ['dal', 'daal', 'sambar'],
     baseAmount: 0.5,
     nutrientsPerBase: { calories: 99, protein_g: 5.5, carbs_g: 15, fat_g: 1.1, iron_mg: 1.6, calcium_mg: 19, vitamin_c_mg: 2 }
   },
   {
     key: 'roti',
+    label: 'Roti',
     aliases: ['roti', 'chapati', 'phulka'],
     baseAmount: 1,
     nutrientsPerBase: { calories: 71, protein_g: 2.3, carbs_g: 12, fat_g: 1.1, iron_mg: 0.6, calcium_mg: 8, vitamin_c_mg: 0 }
   },
   {
     key: 'paneer',
+    label: 'Paneer',
     aliases: ['paneer'],
     baseAmount: 0.25,
     nutrientsPerBase: { calories: 80, protein_g: 4.7, carbs_g: 1.3, fat_g: 6.2, iron_mg: 0.1, calcium_mg: 120, vitamin_c_mg: 0 }
   },
   {
     key: 'curd',
+    label: 'Curd',
     aliases: ['curd', 'yogurt', 'dahi'],
     baseAmount: 0.5,
     nutrientsPerBase: { calories: 74, protein_g: 4, carbs_g: 5, fat_g: 4, iron_mg: 0.1, calcium_mg: 140, vitamin_c_mg: 1 }
   },
   {
     key: 'banana',
+    label: 'Banana',
     aliases: ['banana'],
     baseAmount: 1,
     nutrientsPerBase: { calories: 89, protein_g: 1.1, carbs_g: 23, fat_g: 0.3, iron_mg: 0.3, calcium_mg: 5, vitamin_c_mg: 9 }
   },
   {
     key: 'apple',
+    label: 'Apple',
     aliases: ['apple'],
     baseAmount: 1,
     nutrientsPerBase: { calories: 95, protein_g: 0.5, carbs_g: 25, fat_g: 0.3, iron_mg: 0.2, calcium_mg: 11, vitamin_c_mg: 8 }
   },
   {
     key: 'egg',
+    label: 'Egg',
     aliases: ['egg', 'eggs'],
     baseAmount: 1,
     nutrientsPerBase: { calories: 78, protein_g: 6.3, carbs_g: 0.6, fat_g: 5.3, iron_mg: 0.9, calcium_mg: 28, vitamin_c_mg: 0 }
@@ -173,6 +186,13 @@ export function estimateNutritionFromNote(note: string | null, quantity: string 
   return totals;
 }
 
+export function extractRecognizedFoods(note: string | null): string[] {
+  if (!note || !note.trim()) return [];
+
+  const text = note.toLowerCase();
+  return FOOD_CATALOG.filter((food) => food.aliases.some((alias) => text.includes(alias))).map((food) => food.label);
+}
+
 export function addNutrients(target: NutrientEstimate, source: NutrientEstimate) {
   target.calories += source.calories;
   target.protein_g += source.protein_g;
@@ -198,4 +218,3 @@ export function roundNutrients(value: NutrientEstimate): NutrientEstimate {
 export function getToddlerTargets() {
   return TODDLER_TARGETS;
 }
-
