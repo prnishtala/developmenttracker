@@ -76,6 +76,8 @@ export type DashboardData = {
   foodDiversity: { date: string; count: number }[];
   calorieTrend: { date: string; calories: number }[];
   motorTrend: { date: string; minutes: number }[];
+  independenceTrend: { date: string; minutes: number }[];
+  problemSolvingTrend: { date: string; minutes: number }[];
   mealCompletionTrend: { date: string; meals: number }[];
   medicineSummary: { label: string; value: number }[];
   careTrend: { date: string; careCount: number }[];

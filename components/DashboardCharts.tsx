@@ -30,7 +30,9 @@ const CHART_COLORS = {
   motor: '#ea580c',
   calories: '#1d4ed8',
   meals: '#65a30d',
-  naps: '#0f766e'
+  naps: '#0f766e',
+  independence: '#7c3aed',
+  problemSolving: '#0891b2'
 };
 
 function formatShortDate(date: string): string {
@@ -265,6 +267,34 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                 <Legend />
                 <Line dataKey="language" name="Language" type="monotone" stroke={CHART_COLORS.language} strokeWidth={3} dot={false} />
                 <Line dataKey="motor" name="Motor" type="monotone" stroke={CHART_COLORS.motor} strokeWidth={3} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+      </section>
+
+      <section>
+        <article className="rounded-[28px] border border-white/60 bg-white/90 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Focus Areas</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-950">Independence and problem-solving minutes</h3>
+          </div>
+          <div className="mt-4 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={data.independenceTrend.map((item, index) => ({
+                  date: item.date,
+                  independence: item.minutes,
+                  problemSolving: data.problemSolvingTrend[index]?.minutes ?? 0
+                }))}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip labelFormatter={formatShortDate} />
+                <Legend />
+                <Line dataKey="independence" name="Independence" type="monotone" stroke={CHART_COLORS.independence} strokeWidth={3} dot={false} />
+                <Line dataKey="problemSolving" name="Problem Solving" type="monotone" stroke={CHART_COLORS.problemSolving} strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
