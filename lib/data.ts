@@ -1,6 +1,14 @@
 import { format, getDay, parseISO, subDays } from 'date-fns';
 import { buildDashboardNarrative } from '@/lib/dashboard-summary';
-import { DURATION_TO_MINUTES, LANGUAGE_SKILLS, MEAL_TYPES, MOTOR_SKILLS, OUTDOOR_ACTIVITY_KEYWORDS } from '@/lib/constants';
+import {
+  DURATION_TO_MINUTES,
+  INDEPENDENCE_SKILLS,
+  LANGUAGE_SKILLS,
+  MEAL_TYPES,
+  MOTOR_SKILLS,
+  OUTDOOR_ACTIVITY_KEYWORDS,
+  PROBLEM_SOLVING_SKILLS
+} from '@/lib/constants';
 import {
   addNutrients,
   IRON_DROPS_ELEMENTAL_IRON_MG,
@@ -322,11 +330,15 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
 
   const languageByDay = new Map<string, number>();
   const motorByDay = new Map<string, number>();
+  const independenceByDay = new Map<string, number>();
+  const problemSolvingByDay = new Map<string, number>();
 
   for (let i = 13; i >= 0; i -= 1) {
     const key = dateKey(subDays(today, i));
     languageByDay.set(key, 0);
     motorByDay.set(key, 0);
+    independenceByDay.set(key, 0);
+    problemSolvingByDay.set(key, 0);
   }
 
   for (const log of typed14) {
@@ -339,6 +351,12 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     }
     if (tags.some((tag) => MOTOR_SKILLS.includes(tag))) {
       motorByDay.set(day, (motorByDay.get(day) ?? 0) + minutes);
+    }
+    if (tags.some((tag) => INDEPENDENCE_SKILLS.includes(tag))) {
+      independenceByDay.set(day, (independenceByDay.get(day) ?? 0) + minutes);
+    }
+    if (tags.some((tag) => PROBLEM_SOLVING_SKILLS.includes(tag))) {
+      problemSolvingByDay.set(day, (problemSolvingByDay.get(day) ?? 0) + minutes);
     }
   }
 
@@ -737,6 +755,8 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
     foodDiversity: Array.from(foodByDay.entries()).map(([date, foods]) => ({ date, count: foods.size })),
     calorieTrend: Array.from(caloriesByDay.entries()).map(([date, calories]) => ({ date, calories: Math.round(calories) })),
     motorTrend: Array.from(motorByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
+    independenceTrend: Array.from(independenceByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
+    problemSolvingTrend: Array.from(problemSolvingByDay.entries()).map(([date, minutes]) => ({ date, minutes })),
     mealCompletionTrend: Array.from(mealsByDay.entries()).map(([date, meals]) => ({ date, meals })),
     medicineSummary: [
       { label: 'Iron Drops Days', value: ironDays },

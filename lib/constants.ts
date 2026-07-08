@@ -11,6 +11,8 @@ export const DURATION_TO_MINUTES: Record<string, number> = {
 
 export const LANGUAGE_SKILLS = ['Vocabulary', 'Expressive Language', 'Receptive Language'];
 export const MOTOR_SKILLS = ['Gross Motor', 'Fine Motor'];
+export const INDEPENDENCE_SKILLS = ['Independence'];
+export const PROBLEM_SOLVING_SKILLS = ['Problem Solving'];
 export const OUTDOOR_ACTIVITY_KEYWORDS = ['outdoor'];
 
 export const MEAL_TYPES = [
