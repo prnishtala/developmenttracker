@@ -1,0 +1,792 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Family OS//Personal Daily//EN
+CALSCALE:GREGORIAN
+X-WR-CALNAME:Prakash — Daily Schedule
+X-WR-TIMEZONE:America/Chicago
+BEGIN:VTIMEZONE
+TZID:America/Chicago
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0500
+TZNAME:CDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0600
+TZNAME:CST
+DTSTART:19701101T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:8d841d7e-d410-4922-8761-5d2592c25f65@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T064500
+DTEND;TZID=America/Chicago:20260706T070000
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR
+SUMMARY:Wake\, get ready\, log on
+DESCRIPTION:End-state wake time — pairs with the 11:30-11:45 PM bedtime t
+ arget for ~7 hours. If you're still on the bedtime ramp (ask: is lights-ou
+ t reliably before 12:30 AM yet?)\, wake stays 7:00 AM until the ramp is do
+ ne — don't force an earlier wake before the sleep debt is repaid.\n\nMON
+ DAY NOTE: check whether this is your laundry week (separate all-day marker
+ ) — if so\, start a load before you sit down to work.
+END:VEVENT
+BEGIN:VEVENT
+UID:8f96a657-9cbd-493a-ade5-ec7be88415b4@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T070000
+DTEND;TZID=America/Chicago:20260706T100000
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR
+SUMMARY:WFH work block
+DESCRIPTION:Deep work / meetings from home. Default: Shraddha owns the 8:00
+ -9:00 AM Ahana block while you work straight through.\n\nTWO MORNINGS A WE
+ EK (decided fresh at the Sunday Weekly Reset\, not fixed to specific days)
+ : you shift this block to start at 8:00 AM instead and take the 8-9 Ahana 
+ block yourself\, so the default doesn't silently calcify into "Shraddha al
+ ways does mornings." Check this week's decision before assuming.
+END:VEVENT
+BEGIN:VEVENT
+UID:f46605c1-bdab-4fb5-879e-2b0df220ae55@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T100000
+DTEND;TZID=America/Chicago:20260706T103500
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR
+SUMMARY:Commute to office
+DESCRIPTION:~35 min by train + walking\, or ~30 min by car.
+END:VEVENT
+BEGIN:VEVENT
+UID:9a8f7ff6-9af8-4c81-bc3e-aefd4fb39ad1@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T103500
+DTEND;TZID=America/Chicago:20260706T170000
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR
+SUMMARY:Office work block
+DESCRIPTION:Continuous block — no fixed lunch anchor for you (that anchor
+  exists for Shraddha's medication\, not for you)\, so eat whenever fits na
+ turally. This is also where the two 45-min weekly career-learning blocks a
+ nd the quarterly promotion-arc work should sit — put them on your WORK c
+ alendar specifically\, inside this window.
+END:VEVENT
+BEGIN:VEVENT
+UID:8da5e881-84a0-4b1f-ba64-c4b87e45d3a9@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T170000
+DTEND;TZID=America/Chicago:20260706T180000
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR
+SUMMARY:Commute home
+DESCRIPTION:Commute + buffer — typically arriving ~6:00 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:b45a243e-0f9f-4910-9cc8-79540263559f@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T180000
+DTEND;TZID=America/Chicago:20260706T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Family block\, no phones — Dinner: Tadka Dal + Aloo Gobi + Rice (
+ Week 1)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: reheat Sunday's batch dal (1 cup toor dal base) with 
+ a fresh tempering — 1 tbsp ghee\, 1 tsp cumin seeds\, 2 crushed garlic c
+ loves\, 1 dried red chili\, pinch hing\; pour over dal\, simmer 3 min.\nAl
+ oo gobi: 2 cups cauliflower florets + 2 medium potatoes\, cubed. Heat 2 tb
+ sp oil + 1 tsp cumin seeds\, add potato/cauliflower\, 1/2 tsp turmeric\, 1
+  tsp coriander powder\, 1/2 tsp red chili powder\, salt. Cover\, cook 12-1
+ 5 min\, stir occasionally\, finish with cilantro.\nServe over Sunday's bat
+ ch rice. Ahana: her portion aside before final chili.
+END:VEVENT
+BEGIN:VEVENT
+UID:b7c4a534-0d2f-45b3-8f28-5f7f8d8fae60@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260713T180000
+DTEND;TZID=America/Chicago:20260713T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Family block\, no phones — Dinner: Chana Dal + Bhindi Fry + Rice 
+ (Week 2)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Chana dal — 1 cup chana dal\, Instant Pot Manual 12
+  min + natural release\, with 3 cups water\, 1/2 tsp turmeric\, salt. Temp
+ er: 1 tbsp oil\, 1 tsp cumin\, 1 chopped onion\, 1 tomato\, 1/2 tsp red ch
+ ili powder — cook till soft\, mix in\, simmer 5 min.\nBhindi fry: 3 cups
+  sliced okra\, saute uncovered in 2 tbsp oil\, medium-high\, 12-15 min\, w
+ ith 1/2 tsp turmeric\, 1 tsp coriander powder\, salt\, until crisp-edged (
+ uncovered keeps it from getting slimy).\nServe with rice. Ahana: her porti
+ on aside before final chili.
+END:VEVENT
+BEGIN:VEVENT
+UID:7fe22b63-16f2-485e-9a52-db502ed03ff9@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260720T180000
+DTEND;TZID=America/Chicago:20260720T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Family block\, no phones — Dinner: Moong Dal + Baingan Bharta + R
+ oti (Week 3)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Moong dal — 1 cup split moong dal\, Instant Pot Man
+ ual 6 min + quick release\, 1/2 tsp turmeric\, salt\, 3 cups water. Temper
+ : 1 tbsp ghee\, 1 tsp cumin\, pinch hing\, 1 chopped tomato — mix in.\nB
+ aingan bharta: roast 1 large eggplant whole (air fryer 400F\, 25 min) unti
+ l soft\, peel\, mash. Saute 1 chopped onion\, 2 cloves garlic\, 1 tomato i
+ n 2 tbsp oil\, add mashed eggplant\, 1/2 tsp turmeric\, 1/2 tsp red chili 
+ powder\, salt\, cook 8 min.\nServe with fresh roti. Ahana: her portion asi
+ de before final chili.
+END:VEVENT
+BEGIN:VEVENT
+UID:b51e67e7-088f-4427-bc5f-8696edc0e7ab@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260727T180000
+DTEND;TZID=America/Chicago:20260727T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Family block\, no phones — Dinner: Rajma + Jeera Rice (Week 4)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Rajma — 1 cup rajma (soaked overnight\, or canned &
+  drained)\, Instant Pot Manual 20 min soaked / 8 min canned + natural rele
+ ase\, with 1 chopped onion\, 1 tomato\, 1 tbsp ginger-garlic paste\, 1 tsp
+  rajma masala or garam masala\, salt\, 2.5 cups water.\nJeera rice: 2 cups
+  basmati rice — saute 1 tbsp ghee + 1 tsp cumin seeds first\, then cook 
+ rice as usual (rice cooker) with the cumin-ghee mixed in.\nAhana: her port
+ ion aside before final chili.
+END:VEVENT
+BEGIN:VEVENT
+UID:3c021ef7-7160-4c18-887d-d549657c421b@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260707T180000
+DTEND;TZID=America/Chicago:20260707T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Family block\, no phones — Dinner: Sambar + Rice + Beans Poriyal 
+ (Week 1)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Sambar — reheat 1.5 cups leftover dal base\, add 1 
+ cup mixed vegetables (drumstick\, carrot\, pumpkin — whatever's on hand)
+ \, 2 tbsp sambar powder\, 1 tbsp tamarind paste\, salt. Simmer 10 min. Tem
+ per: 1 tbsp oil\, 1/2 tsp mustard seeds\, curry leaves\, 2 dried red chili
+ es — pour over.\nBeans poriyal: 2 cups chopped green beans\, saute/steam
+  8 min with 1 tbsp oil\, 1/2 tsp mustard seeds\, curry leaves\, 2 tbsp gra
+ ted coconut\, salt.\nServe with rice. Ahana: her portion aside before fina
+ l tempering.
+END:VEVENT
+BEGIN:VEVENT
+UID:caae3bef-00b2-4a1b-9bd4-d0fde70da1b7@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260714T180000
+DTEND;TZID=America/Chicago:20260714T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Family block\, no phones — Dinner: Rasam + Rice + Cabbage Poriyal
+  (Week 2)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Rasam — 2 tbsp cooked toor dal mashed + 2 cups wate
+ r\, 1 tbsp rasam powder\, 1 tbsp tamarind paste\, 1 chopped tomato\, salt.
+  Simmer 10 min. Temper: 1 tsp mustard seeds\, curry leaves\, pinch hing in
+  1 tbsp ghee — pour over\, finish with cilantro.\nCabbage poriyal: 3 cup
+ s shredded cabbage\, saute 8 min with 1 tbsp oil\, 1/2 tsp mustard seeds\,
+  2 tbsp grated coconut\, salt.\nServe with rice. Ahana: her portion aside 
+ before final tempering.
+END:VEVENT
+BEGIN:VEVENT
+UID:1c6da6de-4fd9-4435-8aa3-a4d94d1c35e4@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260721T180000
+DTEND;TZID=America/Chicago:20260721T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Family block\, no phones — Dinner: Vegetable Kurma + Idli (Week 3
+ )
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Kurma — saute 1 chopped onion\, 1 tbsp ginger-garli
+ c paste in 2 tbsp oil\, add 2 cups mixed vegetables (carrot\, beans\, pota
+ to\, peas)\, 1/2 cup coconut-cashew paste (blend 3 tbsp grated coconut + 5
+  cashews + water)\, 1 tsp garam masala\, salt\, 1 cup water — simmer cov
+ ered 12 min.\nServe with steamed idli (store-bought batter is fine).\nAhan
+ a: her portion aside before final spice.
+END:VEVENT
+BEGIN:VEVENT
+UID:32f0d98b-678a-4ca3-9074-8ff97ddbd12b@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260728T180000
+DTEND;TZID=America/Chicago:20260728T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Family block\, no phones — Dinner: Curd Rice + Vathal Kuzhambu (W
+ eek 4)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: Curd rice — mix 2 cups cooked rice (mashed slightly
+ ) with 1.5 cups yogurt\, 1/2 cup milk\, salt. Temper 1 tsp mustard seeds\,
+  curry leaves\, 1 dried red chili in 1 tbsp oil — mix in.\nVathal kuzham
+ bu — 2 tbsp tamarind paste + 1.5 cups water\, 2 tbsp sambar powder\, sal
+ t\, simmer 10 min\, same temper as sambar. (Short on time: leftover sambar
+  works as a substitute.)\nAhana: plain curd rice\, no tempering\, set asid
+ e first.
+END:VEVENT
+BEGIN:VEVENT
+UID:094ef000-78ab-49e0-9ba2-14f8cd555b20@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260708T174500
+DTEND;TZID=America/Chicago:20260708T181500
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Wednesday Batch Cook — Vegetable Khichdi (Week 1)
+DESCRIPTION:NOTE: this slot assumes you're home by 5:45 — most office day
+ s you're still commuting (arriving ~6:00)\, so this realistically only wor
+ ks on your WFH days\, or if you leave the office early. If it's your week 
+ to cook and can't make 5:45\, shift this to whenever you're both home\, be
+ fore 6:30 — the recipe doesn't change\, just the clock.\n\nRECIPE — Ve
+ getable Khichdi: 1 cup rice + 1/2 cup moong dal\, rinsed together. 3 cups 
+ mixed chopped vegetables (carrot\, beans\, peas\, potato). 4.5 cups water\
+ , 1/2 tsp turmeric\, 1 tsp cumin seeds\, 1 tbsp ghee\, salt to taste.\nMET
+ HOD (Instant Pot): saute cumin in ghee 30 sec -> add rice\, dal\, vegetabl
+ es\, turmeric\, salt\, water -> Manual/Pressure Cook 8 min -> natural rele
+ ase 10 min.\nAHANA: set aside and mash her portion before adding final sal
+ t/chili if any is added at serving.\nThis doubles as tonight's dinner — 
+ no separate cooking needed at 6:00.
+END:VEVENT
+BEGIN:VEVENT
+UID:63da86a6-48ff-4b0a-9251-66a67ce3f0e6@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260715T174500
+DTEND;TZID=America/Chicago:20260715T181500
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Wednesday Batch Cook — Vegetable Pulao (Week 2)
+DESCRIPTION:NOTE: this slot assumes you're home by 5:45 — most office day
+ s you're still commuting (arriving ~6:00)\, so this realistically only wor
+ ks on your WFH days\, or if you leave the office early. If it's your week 
+ to cook and can't make 5:45\, shift this to whenever you're both home\, be
+ fore 6:30 — the recipe doesn't change\, just the clock.\n\nRECIPE — Ve
+ getable Pulao: 2 cups basmati rice\, rinsed. 2 cups mixed vegetables (peas
+ \, carrot\, beans). 1 sliced onion\, 1 tbsp ginger-garlic paste. Whole spi
+ ces: 1 bay leaf\, 2 cloves\, 1 small cinnamon stick\, 2 cardamom pods. 2 t
+ bsp ghee\, 3.5 cups water\, salt.\nMETHOD (Instant Pot): saute whole spice
+ s + onion in ghee 3 min -> add ginger-garlic\, vegetables\, rice\, water\,
+  salt -> Manual/Pressure Cook 6 min -> natural release 10 min.\nAHANA: set
+  aside and mash her portion before serving with any extra chili.\nDoubles 
+ as tonight's dinner.
+END:VEVENT
+BEGIN:VEVENT
+UID:6e1ead9f-1f65-4ce4-9851-eb75806c028a@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260722T174500
+DTEND;TZID=America/Chicago:20260722T181500
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Wednesday Batch Cook — Dal Khichdi + Roasted Veg (Week 3)
+DESCRIPTION:NOTE: this slot assumes you're home by 5:45 — most office day
+ s you're still commuting (arriving ~6:00)\, so this realistically only wor
+ ks on your WFH days\, or if you leave the office early. If it's your week 
+ to cook and can't make 5:45\, shift this to whenever you're both home\, be
+ fore 6:30 — the recipe doesn't change\, just the clock.\n\nRECIPE — Da
+ l Khichdi: 1/3 cup toor dal + 1/3 cup moong dal + 1 cup rice\, rinsed toge
+ ther. 4 cups water\, 1/2 tsp turmeric\, salt.\nMETHOD (Instant Pot): combi
+ ne all -> Manual/Pressure Cook 8 min -> natural release.\nRoasted veg (air
+  fryer\, cook alongside): 3 cups mixed vegetables (cauliflower\, carrot\, 
+ sweet potato) tossed in 1 tbsp oil\, salt\, 1/2 tsp cumin powder -> 400F\,
+  15 min\, shake at 8 min.\nAHANA: her portion aside before any final chili
+  goes on the khichdi.\nDoubles as tonight's dinner.
+END:VEVENT
+BEGIN:VEVENT
+UID:146abeb4-8264-4ef5-bd9e-0f8632bacdf7@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260729T174500
+DTEND;TZID=America/Chicago:20260729T181500
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Wednesday Batch Cook — Lemon Rice + Air-Fryer Tofu (Week 4)
+DESCRIPTION:NOTE: this slot assumes you're home by 5:45 — most office day
+ s you're still commuting (arriving ~6:00)\, so this realistically only wor
+ ks on your WFH days\, or if you leave the office early. If it's your week 
+ to cook and can't make 5:45\, shift this to whenever you're both home\, be
+ fore 6:30 — the recipe doesn't change\, just the clock.\n\nRECIPE — Le
+ mon Rice: 3 cups cooked rice (Sunday's batch\, or fresh). Temper 2 tbsp oi
+ l\, 1 tsp mustard seeds\, 1 tbsp chana dal\, 1 tbsp peanuts\, curry leaves
+ \, 2 dried red chilies\, pinch turmeric -> mix into rice with juice of 1.5
+  lemons\, salt.\nRECIPE — Tofu (air fryer\, cook alongside): 14 oz tofu 
+ cubes tossed in 2 tbsp yogurt + 1 tbsp ginger-garlic paste + 1 tsp chili p
+ owder + 1/2 tsp turmeric + 1 tsp garam masala + 3/4 tsp salt + 1 tbsp oil 
+ -> 400F\, 12 min\, shake at 6 min.\nAHANA: plain rice portion aside before
+  the lemon/chili tempering goes in.\nDoubles as tonight's dinner.
+END:VEVENT
+BEGIN:VEVENT
+UID:ab399eb4-57a4-44f9-8be4-762c9483d799@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260708T180000
+DTEND;TZID=America/Chicago:20260708T193000
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Family block\, no phones — dinner already cooking
+DESCRIPTION:Tonight's dinner and its exact recipe are in the 5:45-6:15 PM '
+ Wednesday Batch Cook' event — nothing new to decide here. Just serve\, e
+ at (~6:30)\, then floor play or books\, her choice. No phones.\n\nIf it's 
+ your week to own the Wednesday refresh (alternates — check the reset)\, 
+ you're the one cooking\; otherwise Shraddha has it if she's less deep in a
+  work block that evening (she's more often home at 5:45 than you are — s
+ ee the timing note on the batch-cook event).
+END:VEVENT
+BEGIN:VEVENT
+UID:b6901b7e-feba-46f7-ae4a-6eb2ad0983ea@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260709T180000
+DTEND;TZID=America/Chicago:20260709T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Family block\, no phones — Dinner: Dal Paratha\, ~10 min (Week 1)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT (leftover remix): mix 1 cup leftover thick dal with 1.
+ 5 cups whole wheat flour\, 1/2 tsp ajwain\, salt\, a splash of water — k
+ nead into a soft dough. Roll into 6 parathas\, cook on a hot tawa with 1/2
+  tsp ghee each side until golden spots appear. Serve with yogurt/pickle.\n
+ Ahana: a plain paratha\, no pickle\, torn into small pieces.
+END:VEVENT
+BEGIN:VEVENT
+UID:481b1386-8d56-4932-b817-b0f8ac418799@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260716T180000
+DTEND;TZID=America/Chicago:20260716T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Family block\, no phones — Dinner: Fried Rice\, ~10 min (Week 2)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT (leftover remix): 3 cups leftover rice\, 1 cup diced m
+ ixed vegetables (frozen is fine) — saute vegetables in 2 tbsp oil 4 min\
+ , push aside\, scramble in 2 eggs or extra tofu cubes\, mix in rice\, 2 tb
+ sp soy sauce\, 1/2 tsp black pepper\, toss 3-4 min on high heat.\nAhana: a
+  plain portion set aside before the soy sauce goes in.
+END:VEVENT
+BEGIN:VEVENT
+UID:a0dce7fc-4f8c-4942-af4e-e3c08af49a6b@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260723T180000
+DTEND;TZID=America/Chicago:20260723T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Family block\, no phones — Dinner: Dal Soup + Toast\, ~10 min (We
+ ek 3)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT (leftover remix): blend or mash 1.5 cups leftover dal 
+ with 1 cup vegetable broth or water to soup consistency\, reheat with a sq
+ ueeze of lemon and black pepper. Toast 4 slices bread with butter. Done in
+  5 minutes.\nAhana: her portion without the lemon/pepper\, lukewarm.
+END:VEVENT
+BEGIN:VEVENT
+UID:169fba42-4653-4047-801e-31e039f32785@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260730T180000
+DTEND;TZID=America/Chicago:20260730T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Family block\, no phones — Dinner: Rajma Wrap\, ~10 min (Week 4)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT (leftover remix): warm 4 tortillas or rotis. Fill with
+  leftover rajma (mash slightly so it doesn't spill)\, chopped onion\, a sp
+ oon of yogurt or chutney\, shredded lettuce. Roll and serve — reheating 
+ only\, no real cooking.\nAhana: rajma and rice separately rather than wrap
+ ped\, easier for her to eat.
+END:VEVENT
+BEGIN:VEVENT
+UID:538d93c7-3179-41d0-9acf-251b0a8ff129@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260710T180000
+DTEND;TZID=America/Chicago:20260710T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Family block\, no phones — Dinner: Dosa/Uttapam\, batter (Week 1)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: heat a tawa\, pour a ladle of batter — spread thin 
+ for dosa\, or leave thick with chopped onion/tomato pressed in for uttapam
+ . Cook 2-3 min per side with a little oil. Serve with sambar (Tuesday's le
+ ftovers\, if any) and coconut chutney (store-bought is fine).\nAhana: a so
+ ft\, plain uttapam piece\, torn small.
+END:VEVENT
+BEGIN:VEVENT
+UID:29e64867-14d3-40d7-ba2d-c55a636cf424@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260717T180000
+DTEND;TZID=America/Chicago:20260717T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Family block\, no phones — Dinner: Pasta Night (Week 2)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: boil 300g pasta per package instructions. Sauce: saut
+ e 1 chopped onion + 3 cloves garlic in 2 tbsp olive oil\, add 1 cup jarred
+  marinara + 1 cup chopped vegetables (zucchini\, bell pepper\, spinach)\, 
+ simmer 8 min\, salt + chili flakes to taste. Toss with pasta\, top with gr
+ ated cheese.\nAhana: her portion before the chili flakes go in.
+END:VEVENT
+BEGIN:VEVENT
+UID:13645a42-276d-4957-a422-183c76c5dc17@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260724T180000
+DTEND;TZID=America/Chicago:20260724T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Family block\, no phones — Dinner: Air-Fryer Paneer + Salad (Week
+  3)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: toss 300g paneer cubes in 2 tbsp yogurt\, 1 tbsp ging
+ er-garlic paste\, 1 tsp tikka masala\, salt — air fryer 400F\, 10 min\, 
+ shake at 5 min. Side salad: cucumber\, tomato\, onion\, lemon juice\, salt
+ .\nAhana: plain paneer cubes set aside before the masala marinade.
+END:VEVENT
+BEGIN:VEVENT
+UID:d331289b-eed1-4893-8b2a-2f7f534b698c@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260731T180000
+DTEND;TZID=America/Chicago:20260731T193000
+RRULE:INTERVAL=4;FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Family block\, no phones — Dinner: Frozen Paratha + Curd (Week 4)
+DESCRIPTION:Dinner (~6:30) + floor play or books\, her pick. Phone physical
+ ly out of the room. Narrate\, expand her sentences\, offer one real choice
+ .\n\nDINNER TONIGHT: pan-fry 4 frozen parathas with a little ghee/oil per 
+ package instructions\, 2-3 min per side. Serve with fresh curd/yogurt and 
+ pickle. Zero-effort Friday\, by design.\nAhana: plain paratha piece + plai
+ n curd\, no pickle.
+END:VEVENT
+BEGIN:VEVENT
+UID:fb38f626-e36a-4d93-831c-cbdea623841d@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T193000
+DTEND;TZID=America/Chicago:20260706T200000
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR
+SUMMARY:Wrap up / transition
+DESCRIPTION:Dinner cleanup\, brief buffer before heading out for the evenin
+ g walk.
+END:VEVENT
+BEGIN:VEVENT
+UID:c7841751-b58f-4682-8024-58dd2ee67697@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T200000
+DTEND;TZID=America/Chicago:20260706T204500
+RRULE:FREQ=DAILY
+SUMMARY:Evening outdoors — walk / park (summer)
+DESCRIPTION:The day's outdoor time\, post-heat. Family walk / playground 
+ — also Ahana's gross-motor slot.\n\nTUE/FRI NOTE: trash + recycling go o
+ ut around now too (a separate quick task\, ~10 min) — swing it out on th
+ e way rather than treating it as a second errand.\n\nSEASONAL: in cooler m
+ onths (roughly Oct-May) this can shift to daytime instead — edit once wh
+ en the weather turns.
+END:VEVENT
+BEGIN:VEVENT
+UID:188978dd-21d6-4b68-8be4-8af1895bbcf9@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T204500
+DTEND;TZID=America/Chicago:20260706T210000
+RRULE:FREQ=DAILY
+SUMMARY:Wash up / settle in
+DESCRIPTION:Quick buffer between the outdoor walk and Ahana's wind-down —
+  hands washed\, pajamas started.
+END:VEVENT
+BEGIN:VEVENT
+UID:db7605ed-1ec0-4d30-91bc-c93ee0e5eb6d@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T210000
+DTEND;TZID=America/Chicago:20260706T214500
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR,SA,SU
+SUMMARY:Ahana wind-down + books
+DESCRIPTION:Full routine with her: bath/wipe-down -> pajamas -> two books (
+ her choice) -> song -> crib. Lights low from the start\, no screens.\n\n(T
+ uesdays and Thursdays have a shorter version — see the separate Tue/Thu 
+ event — because you leave for the gym at 9:30.)
+END:VEVENT
+BEGIN:VEVENT
+UID:d28eb8ee-f685-4b1a-b5a0-c6ef5ca7b378@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260707T210000
+DTEND;TZID=America/Chicago:20260707T213000
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH
+SUMMARY:Ahana wind-down (partial — gym night)
+DESCRIPTION:You're in for the first half (bath\, pajamas\, one book)\, then
+  hand off to Shraddha at 9:30 so you can get to the gym while it's empty. 
+ She solo-finishes the routine on these two nights — that's the deal\, no
+ t a gap.
+END:VEVENT
+BEGIN:VEVENT
+UID:f6d45e2d-3207-4486-9872-9828aea257ed@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260707T213000
+DTEND;TZID=America/Chicago:20260707T220000
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH
+SUMMARY:Strength — apartment gym (empty hours)
+DESCRIPTION:30 min routine:\n- Goblet squats or leg press (moderate depth 
+ — knee history) 3x10\n- Rows 3x10\n- Incline push-ups or chest press (sk
+ ip overhead pressing early — clavicle history) 3x10\n- Carries or planks
+ \, 3 rounds\n\nHARD RULES: never start later than 9:45. Out by 10:15. This
+  replaces screen time\, never sleep. GATE: only once your bedtime ramp is 
+ reliably <= 12:30 AM — until then this slot is just quiet time\, not the
+  gym.
+END:VEVENT
+BEGIN:VEVENT
+UID:f771a5a8-1165-470f-a152-e2846ac3ed69@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T214500
+DTEND;TZID=America/Chicago:20260706T224500
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR,SA,SU
+SUMMARY:Own evening
+DESCRIPTION:Free time — hobbies\, reading\, whatever isn't a screen-doom-
+ scroll. This is the time the shutdown ritual exists to protect from turnin
+ g into more work.
+END:VEVENT
+BEGIN:VEVENT
+UID:b0f81c87-1ed8-4ff2-ac99-ab54e50c79a3@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260707T220000
+DTEND;TZID=America/Chicago:20260707T224500
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH
+SUMMARY:Own evening (shorter — gym night)
+DESCRIPTION:Shorter free-time window after the gym\, same rules — not a r
+ eason to push the shutdown ritual later.
+END:VEVENT
+BEGIN:VEVENT
+UID:fafef4b0-ca7c-4b46-9322-4999f052bd3d@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T224500
+DTEND;TZID=America/Chicago:20260706T230000
+RRULE:FREQ=DAILY
+SUMMARY:Shutdown ritual
+DESCRIPTION:1. Write tomorrow's ONE most important task. 2. Close every wor
+ k tab/app\, laptop out of reach. 3. Phone charges outside the bedroom. 4. 
+ Wifi cuts automatically 30 min from now (router schedule).
+END:VEVENT
+BEGIN:VEVENT
+UID:c0d337e0-307e-4acf-8a85-e08bab1375ab@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T230000
+DTEND;TZID=America/Chicago:20260706T233000
+RRULE:FREQ=DAILY
+SUMMARY:Wind down
+DESCRIPTION:Lights dimming\, no new tasks\, no screens — the buffer betwe
+ en the shutdown ritual and lights-out.
+END:VEVENT
+BEGIN:VEVENT
+UID:8726e961-08aa-4659-a3a6-f46c3f516032@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T233000
+DTEND;TZID=America/Chicago:20260706T234500
+RRULE:FREQ=DAILY
+SUMMARY:Bedtime — lights out
+DESCRIPTION:END-STATE target 11:30-11:45 PM. RAMPING FROM 2:00 AM: shift 15
+  min earlier every 3-4 nights (weeks 1-3: 2:00 -> 1:00 AM\; weeks 4-6: 1:0
+ 0 -> 11:30 PM)\, wake stays 7:00 AM throughout the ramp.
+END:VEVENT
+BEGIN:VEVENT
+UID:c9a5b17d-e47a-4443-86fd-5ef74b89d8b4@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260706T234500
+DTEND;TZID=America/Chicago:20260707T064500
+RRULE:FREQ=DAILY
+SUMMARY:Sleep
+DESCRIPTION:~7 hours target. This block is the whole point of the ramp — 
+ protect it over everything else on a bad day.
+END:VEVENT
+BEGIN:VEVENT
+UID:3ba2473a-4bf0-4725-b369-f78b3b8a624d@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260711T070000
+DTEND;TZID=America/Chicago:20260711T093000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Saturday morning — flexible
+DESCRIPTION:No fixed wake time\, but avoid sleeping past ~8:30 — it prote
+ cts the consistency of the bedtime ramp. Otherwise open: errands\, slow mo
+ rning\, whatever the week needs.
+END:VEVENT
+BEGIN:VEVENT
+UID:03b15ea0-3ad7-48a3-b097-f0ba94329f81@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260711T093000
+DTEND;TZID=America/Chicago:20260711T110000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Ahana's Saturday anchor
+DESCRIPTION:The standing weekly tradition — same thing every week (librar
+ y story time / zoo or farm / park walk — pick one and rename this event 
+ once\; repetition is the point\, not novelty). Summer: indoor anchor or sh
+ ift outdoor ones to the evening slot.
+END:VEVENT
+BEGIN:VEVENT
+UID:45a22222-0c34-4788-9f10-1cbc53f1c9b7@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260711T110000
+DTEND;TZID=America/Chicago:20260711T120000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Late morning — open
+DESCRIPTION:Open hour between the Saturday anchor and whatever this Saturda
+ y's midday slot holds.
+END:VEVENT
+BEGIN:VEVENT
+UID:9fb33697-c0be-4043-af95-6058f47149f4@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260704T120000
+DTEND;TZID=America/Chicago:20260704T123000
+RRULE:FREQ=MONTHLY;BYDAY=1SA
+SUMMARY:Monthly Money Review (1st Saturday)
+DESCRIPTION:30 min\, both of you\, nap window. AGENDA: 1) Reconcile account
+ s against last month. 2) Confirm every autopay actually fired. 3) Check sa
+ vings rate vs. target. 4) Review any open money decisions carried from las
+ t month. 5) Log outcome in the Notion Money Reviews database (date\, savin
+ gs rate\, decisions made\, anything deferred + a date). Keep it to 30 minu
+ tes — this is reconciliation\, not strategy.
+END:VEVENT
+BEGIN:VEVENT
+UID:e9544014-9a3e-4331-b812-9c9d6fc05a17@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260711T120000
+DTEND;TZID=America/Chicago:20260711T133000
+RRULE:FREQ=MONTHLY;BYMONTH=4,7,10;BYDAY=2SA
+SUMMARY:Quarterly Finance + Career Review (Apr/Jul/Oct\, 2nd Saturday)
+DESCRIPTION:90 min\, both of you\, nap window. AGENDA: 1) Portfolio review 
+ — allocation drift vs. target\, rebalance if outside bands. 2) Review In
+ dia-side accounts\; note any PFIC/FBAR/FATCA questions for the CPA. 3) Tax
+ -loss/gain considerations. 4) Insurance check-in. 5) Home-buying gates che
+ ck (life stability / financial readiness / market context / house criteria
+ ) — still 'not yet' until all four pass\, no re-litigating. 6) Promotion
+ -arc checkpoint for both of you — is each quarter's artifact on track\, 
+ are the two peak quarters staggered. Log in Notion Money Reviews database.
+ \n\nJanuary is the Annual Review instead (half-day) — this quarterly slo
+ t does not also fire in January.
+END:VEVENT
+BEGIN:VEVENT
+UID:c10a2582-0c10-4b23-aaf4-08adc75c7f91@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260718T120000
+DTEND;TZID=America/Chicago:20260718T130000
+RRULE:FREQ=MONTHLY;BYDAY=3SA
+SUMMARY:Monthly Learning Share (3rd Saturday)
+DESCRIPTION:1 hour\, nap window\, both of you. Each of you shares the most 
+ useful thing you learned that month (from your two weekly 45-min work-hour
+ s learning blocks\, or the quarterly AI-tooling project). This doubles as 
+ marriage maintenance — a conversation that isn't logistics. No prep need
+ ed beyond having paid attention during the month.
+END:VEVENT
+BEGIN:VEVENT
+UID:33366e70-5571-43e0-8d34-b48ae5c2bc54@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260711T133000
+DTEND;TZID=America/Chicago:20260711T180000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Saturday afternoon — open
+DESCRIPTION:Unstructured\, deliberately — no fixed block here. Family tim
+ e\, errands\, rest. (On Monthly Review or Learning Share weeks you'll have
+  a bit more open time than this block alone shows — treat it as a bonus\
+ , not a gap to fill.)
+END:VEVENT
+BEGIN:VEVENT
+UID:5ed7ad60-d884-4c42-ba37-8fdadd28c437@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260711T180000
+DTEND;TZID=America/Chicago:20260711T200000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Saturday evening — open
+DESCRIPTION:No family-block equivalent on Saturdays — dinner is the delib
+ erate release valve: cook something new together\, or order in. No rotatio
+ n here on purpose. Evening is unstructured until the daily evening rhythm 
+ (outdoor walk) picks up at 8:00 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:78e494a0-9702-4411-8917-bb9038bb5bf8@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T070000
+DTEND;TZID=America/Chicago:20260712T100000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Sunday morning — open (Costco weeks: run errands)
+DESCRIPTION:Open until the (biweekly) Costco run at 10:00 on weeks it falls
+ .
+END:VEVENT
+BEGIN:VEVENT
+UID:6dbd5364-37b2-4095-978c-cffaccdb9180@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T100000
+DTEND;TZID=America/Chicago:20260712T113000
+RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=SU
+SUMMARY:Costco run (biweekly)
+DESCRIPTION:BULK LIST — starting quantities\, adjust after a couple of tr
+ ips based on what actually runs out:\n- Rice: one 20 lb bag\n- Lentils: 4 
+ lb toor dal\, 2 lb chana dal\, 2 lb moong dal\, 2 lb masoor dal\n- Quinoa:
+  3 lb bag\n- Frozen mixed vegetables: 2 large bags\n- Tofu: 2 blocks (14 o
+ z each)\n- Greek yogurt: 2 large tubs (32 oz)\n- Paneer: 2 lb\n- Nuts/seed
+ s: 1 mixed bag (almonds\, walnuts\, chia\, flax)\n- Oil: 1 bottle olive oi
+ l\, 1 bottle avocado oil\n- Plant protein powder: 1 tub\n- Oats: 1 large c
+ anister\n\nThe list is the list — impulse items wait for the next trip. 
+ Check Ahana's diaper/wipe Subscribe & Save here too if it hasn't auto-trig
+ gered.
+END:VEVENT
+BEGIN:VEVENT
+UID:3de5fc6e-7a50-44be-bf88-01908d26be3c@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T113000
+DTEND;TZID=America/Chicago:20260712T154500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Sunday midday — open
+DESCRIPTION:Open block. Non-Costco weeks this starts at 10:00 instead.
+END:VEVENT
+BEGIN:VEVENT
+UID:66d576c1-315b-4ddb-a898-966548b6643f@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T154500
+DTEND;TZID=America/Chicago:20260712T160000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Robot vacuum maintenance
+DESCRIPTION:Empty the bin\, rinse/replace mop pads — right before the bat
+ ch cook\, same trip to the kitchen.
+END:VEVENT
+BEGIN:VEVENT
+UID:4fa276b1-73ae-467a-a8db-7e6f57acacb8@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T160000
+DTEND;TZID=America/Chicago:20260712T173000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Sunday Batch Cook — you own this end-to-end
+DESCRIPTION:Groceries-to-containers\, not "helping." Zero decisions\, quant
+ ities inline — the SEQUENCE is the invariant\, not the clock\; things fi
+ nish when they finish.\n\nFIRE ALL THREE (first 10 min\, any order):\n1. I
+ nstant Pot: 1 cup toor dal (rinsed) + 3 cups water + 1/2 tsp turmeric + 1/
+ 2 tsp salt -> Manual/Pressure Cook 10 min\, natural release. (If this Tues
+ day's dinner event says Sambar: use 3/4 cup dal + 3 cups water + 2 cups ch
+ opped veg\, Manual 8 min instead.)\n2. Rice cooker: 3 cups rice\, rinsed\;
+  water to the cooker's own 3-cup line. Start.\n3. Air fryer: EITHER 14 oz 
+ tofu cubes tossed in 2 tbsp yogurt + 1 tbsp ginger-garlic paste + 1 tsp ch
+ ili powder + 1/2 tsp turmeric + 1 tsp garam masala + 3/4 tsp salt + 1 tbsp
+  oil -> 400F\, 12 min\, shake at 6 -- OR a vegetable tray tossed in 1 tbsp
+  oil + salt -> 400F\, ~15 min.\n\nWHILE THINGS COOK (hands busy\, nothing 
+ to decide):\n4. Chop into 3 labeled containers: 3 onions\, 4 tomatoes\, gi
+ nger-garlic for the week.\n5. Wash + stage Ahana's fruit for the week.\n6.
+  Monday and Tuesday's exact dinners are already on next week's calendar ev
+ ents — no grid to check. Just confirm this week's HEB list covers anythi
+ ng missing for them.\n\nWHEN THE INSTANT POT RELEASES:\n7. Tempering (smal
+ l pan): 2 tbsp ghee -> 1 tsp cumin seeds (sizzle) -> 4 cloves minced garli
+ c + 1 chopped onion (golden) -> 2 chopped tomatoes + 1/2 tsp chili powder 
+ + 1/2 tsp salt (soft) -> pour into dal\, mash lightly\, simmer 5 min.\n8. 
+ AHANA FIRST: pull her portions from every pot BEFORE the tempering/final s
+ alt goes in. Small containers\, labeled.\n\nASSEMBLE + CLOSE:\n9. 8 lunch 
+ bowls: rice + dal (or chickpeas) + roasted veg/tofu. Yogurt + pickle added
+  day-of by whoever's eating.\n10. Label leftovers with day tags. Wipe coun
+ ters.\n11. Robot vacuum bin/mop pads — already its own line right before
+  this\, same trip.\n\nBad week? Minimum viable = steps 1\, 2\, 8\, 9. Ever
+ ything else skippable without guilt.
+END:VEVENT
+BEGIN:VEVENT
+UID:8c202409-d0c2-41cc-bae4-22c52773fb88@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T173000
+DTEND;TZID=America/Chicago:20260712T174500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Weekly Reset
+DESCRIPTION:15 min\, both of you: refill the pill organizer\, review the we
+ ek's outliers\, scan next week's calendars for collisions\, confirm who ow
+ ns Wednesday's refresh and which 2 mornings you take the 8-9 AM block.
+END:VEVENT
+BEGIN:VEVENT
+UID:dae89874-7178-4190-8dfa-909268a59f97@family-os
+DTSTAMP:20260707T120000Z
+DTSTART;TZID=America/Chicago:20260712T174500
+DTEND;TZID=America/Chicago:20260712T200000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Sunday evening — home day — Dinner: Simple Khichdi
+DESCRIPTION:Deliberately unstructured — the anti-overscheduling day.\n\nD
+ INNER TONIGHT (fixed\, no rotation — energy goes into the batch cook\, n
+ ot a fancy dinner): 1 cup rice + 1/2 cup moong dal\, 4 cups water\, 1/2 ts
+ p turmeric\, salt. Rice cooker\, or Instant Pot Manual 8 min. Serve with t
+ oast or plain\, whichever's faster.\nAhana: her portion aside before any c
+ hili.\n\nThen the daily evening rhythm (outdoor walk\, wind-down\, shutdow
+ n ritual\, bedtime) picks up as usual at 8:00 PM.
+END:VEVENT
+END:VCALENDAR

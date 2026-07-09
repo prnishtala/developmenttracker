@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Family OS",
+    "slug": "family-os",
+    "scheme": "familyos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": { "backgroundColor": "#0f172a" },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.familyos.app",
+      "adaptiveIcon": { "backgroundColor": "#0f172a" }
+    },
+    "plugins": [
+      "expo-router",
+      ["expo-notifications", { "color": "#0f172a" }]
+    ],
+    "experiments": { "typedRoutes": true },
+    "extra": {
+      "supabaseUrl": "",
+      "supabaseAnonKey": ""
+    }
+  }
+}
