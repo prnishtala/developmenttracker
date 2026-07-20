@@ -30,6 +30,46 @@ export const BATH_DURATION_OPTIONS = DURATION_OPTIONS;
 
 export const NAP_DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 120] as const;
 
+// "Things To Do" — local DFW toddler events discovery
+export const CITY_OPTIONS = [
+  'Irving',
+  'Dallas',
+  'Fort Worth',
+  'Plano',
+  'Frisco',
+  'Arlington',
+  'Grand Prairie',
+  'McKinney',
+  'DFW'
+] as const;
+
+export const EVENT_CATEGORIES = [
+  'Storytime',
+  'Workshop',
+  'Animals/Farm',
+  'Train/Ride',
+  'Museum',
+  'Nature',
+  'Music',
+  'Festival',
+  'Other'
+] as const;
+
+export const SETTING_OPTIONS = ['indoor', 'outdoor', 'both'] as const;
+
+export const COST_FILTERS = ['Free', 'Paid', 'All'] as const;
+
+export const DATE_SCOPES = ['This weekend', 'This week', 'Next 4 weeks'] as const;
+
+// Age filter bands. An event "fits" a band when its [min, max] month range
+// overlaps the band (nulls are treated as open-ended).
+export const AGE_BANDS = [
+  { label: 'Ahana (~18–24 mo)', minMonths: 12, maxMonths: 30 },
+  { label: 'Any young kid (0–5)', minMonths: 0, maxMonths: 72 }
+] as const;
+
+export const EVENTS_HORIZON_DAYS = 28;
+
 export function getTimeOptions(): string[] {
   const options: string[] = [];
   for (let hour = 0; hour < 24; hour += 1) {

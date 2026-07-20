@@ -48,6 +48,48 @@ export type ActivityWithLog = Activity & {
   log: DailyLog | null;
 };
 
+export type EventSetting = 'indoor' | 'outdoor' | 'both';
+export type EventType = 'one_time' | 'recurring' | 'attraction';
+export type EventSourceType = 'ics' | 'json' | 'html' | 'ai_discovery';
+
+export type ToddlerEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  venue_name: string | null;
+  city: string;
+  address: string | null;
+  is_free: boolean;
+  cost_text: string | null;
+  setting: EventSetting;
+  category: string;
+  min_age_months: number | null;
+  max_age_months: number | null;
+  event_type: EventType;
+  source_url: string;
+  booking_url: string | null;
+  verified: boolean;
+  last_checked_at: string;
+};
+
+export type ToddlerEventWithFavorite = ToddlerEvent & {
+  favorited: boolean;
+};
+
+export type EventSource = {
+  id: string;
+  name: string;
+  city: string;
+  url: string;
+  source_type: EventSourceType;
+  category_hint: string | null;
+  active: boolean;
+  notes: string | null;
+};
+
 export type DashboardTone = 'good' | 'watch' | 'neutral';
 
 export type DashboardSignal = {

@@ -27,7 +27,9 @@ import {
   DashboardTone,
   HomeInsights,
   NapLog,
-  NutritionLog
+  NutritionLog,
+  ToddlerEvent,
+  ToddlerEventWithFavorite
 } from '@/lib/types';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
@@ -797,4 +799,47 @@ export async function getDashboardData(today = new Date()): Promise<DashboardDat
       insights: nutritionInsights
     }
   };
+}
+
+const EVENT_COLUMNS =
+  'id, title, description, event_date, start_time, end_time, venue_name, city, address, is_free, cost_text, setting, category, min_age_months, max_age_months, event_type, source_url, booking_url, verified, last_checked_at';
+
+// Reads upcoming events within [from, to] plus all ongoing attractions
+// (event_date is null), tagged with whether each is favorited. Ordered so
+// ongoing attractions surface first, then soonest dated events.
+export async function getEventsInWindow(from: string, to: string): Promise<ToddlerEventWithFavorite[]> {
+  const supabase = getServiceSupabaseClient();
+
+  const [{ data: events, error: eventsError }, { data: favorites, error: favoritesError }] = await Promise.all([
+    supabase
+      .from('events')
+      .select(EVENT_COLUMNS)
+      .or(`event_date.is.null,and(event_date.gte.${from},event_date.lte.${to})`)
+      .order('event_date', { ascending: true, nullsFirst: true }),
+    supabase.from('event_favorites').select('event_id')
+  ]);
+
+  if (eventsError) throw eventsError;
+  if (favoritesError) throw favoritesError;
+
+  const favoriteIds = new Set((favorites ?? []).map((row) => row.event_id as string));
+
+  return ((events ?? []) as ToddlerEvent[]).map((event) => ({
+    ...event,
+    favorited: favoriteIds.has(event.id)
+  }));
+}
+
+// Returns events happening on the given specific dates (used by the weekend digest).
+export async function getEventsOnDates(dates: string[]): Promise<ToddlerEvent[]> {
+  if (dates.length === 0) return [];
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from('events')
+    .select(EVENT_COLUMNS)
+    .in('event_date', dates)
+    .order('event_date', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as ToddlerEvent[];
 }
