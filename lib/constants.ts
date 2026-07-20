@@ -40,6 +40,10 @@ export const CITY_OPTIONS = [
   'Arlington',
   'Grand Prairie',
   'McKinney',
+  'Grapevine',
+  'Garland',
+  'Richardson',
+  'Denton',
   'DFW'
 ] as const;
 
