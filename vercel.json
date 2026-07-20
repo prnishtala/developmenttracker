@@ -3,6 +3,14 @@
     {
       "path": "/api/push-send",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/discover-events",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/weekend-digest",
+      "schedule": "0 14 * * 5"
     }
   ]
 }
