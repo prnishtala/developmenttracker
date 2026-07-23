@@ -20,18 +20,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Recording is too long. Keep voice notes under a couple of minutes.' }, { status: 413 });
     }
 
-    const transcript = await transcribeAudio(audio);
-    if (!transcript) {
+    const result = await transcribeAudio(audio);
+    if (!result.ok) {
       return NextResponse.json({
         ok: false,
         transcript: null,
         meals: [],
-        reason: 'Could not transcribe the recording. Please type the note instead.'
+        reason: 'Could not transcribe the recording. Please type the note instead.',
+        detail: result.error,
+        audioType: audio.type || 'unknown',
+        audioBytes: audio.size
       });
     }
 
-    const meals = await extractMealsFromTranscript(transcript);
-    return NextResponse.json({ ok: true, transcript, meals });
+    const meals = await extractMealsFromTranscript(result.text);
+    return NextResponse.json({ ok: true, transcript: result.text, meals });
   } catch (error) {
     return NextResponse.json({ error: 'Unexpected server error', detail: String(error) }, { status: 500 });
   }
