@@ -17,6 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link className="text-sm font-semibold text-brand-600" href="/">
                 Home
               </Link>
+              <Link className="text-sm font-semibold text-brand-600" href="/meal-plan">
+                Meal Plan
+              </Link>
               <Link className="text-sm font-semibold text-brand-600" href="/things-to-do">
                 Things To Do
               </Link>
