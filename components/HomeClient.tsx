@@ -10,6 +10,7 @@ import { NutritionSection } from '@/components/NutritionSection';
 import { VoiceMealLogger } from '@/components/VoiceMealLogger';
 import { AdherenceCard } from '@/components/AdherenceCard';
 import { computeDailyAdherence } from '@/lib/nutrition-adherence';
+import { VoiceRecap } from '@/components/VoiceRecap';
 import { FALLBACK_TIME_ZONE, getDateInTimeZone, isDateWithinBackRange } from '@/lib/date';
 import { ActivityWithLog, CareLog, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 
@@ -556,6 +557,47 @@ export function HomeClient({
     });
   }
 
+  async function addNapFromRecap(values: { startTime: string; endTime: string | null }) {
+    const tempNapId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const hasEnd = Boolean(values.endTime);
+    const tempNap: NapLog = {
+      id: tempNapId,
+      date,
+      start_time: values.startTime,
+      end_time: hasEnd ? values.endTime : null,
+      duration_minutes: hasEnd ? null : 60,
+      entry_mode: hasEnd ? 'end_time' : 'duration'
+    };
+
+    setNapLogs((current) => [...current, tempNap]);
+
+    startTransition(async () => {
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'nap-create',
+          endpoint: '/api/nap-log',
+          body: {
+            action: 'create',
+            date,
+            startTime: values.startTime,
+            entryMode: hasEnd ? 'end_time' : 'duration',
+            durationMinutes: hasEnd ? null : 60,
+            endTime: hasEnd ? values.endTime : null
+          },
+          tempNapId
+        },
+        onServerError: () => setNapLogs((current) => current.filter((nap) => nap.id !== tempNapId)),
+        onSuccess: (payload) => {
+          const response = payload as { nap?: NapLog };
+          if (!response?.nap) return;
+          const syncedNap = toDisplayNap(response.nap);
+          setNapLogs((current) => current.map((nap) => (nap.id === tempNapId ? syncedNap : nap)));
+        }
+      });
+    });
+  }
+
   async function updateNap(napId: string, changes: Partial<NapLog>) {
     const previous = napLogs;
     const currentNap = napLogs.find((nap) => nap.id === napId);
@@ -718,6 +760,15 @@ export function HomeClient({
             Alert: Language activities have stayed under 15 minutes for 3 consecutive days.
           </p>
         )}
+
+        <VoiceRecap
+          date={date}
+          plannedActivities={activities.map((activity) => ({ id: activity.id, name: activity.name }))}
+          onApplyMeal={upsertNutritionLog}
+          onApplyCare={upsertCareLog}
+          onAddNap={addNapFromRecap}
+          onCompleteActivity={(activityId) => upsertDailyLog({ activityId, completed: true })}
+        />
 
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(Object.keys(TAB_LABELS) as TabKey[]).map((tab) => (
