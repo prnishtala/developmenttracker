@@ -7,6 +7,7 @@ import { ActivityCard } from '@/components/ActivityCard';
 import { CareSection } from '@/components/CareSection';
 import { NapSection } from '@/components/NapSection';
 import { NutritionSection } from '@/components/NutritionSection';
+import { VoiceMealLogger } from '@/components/VoiceMealLogger';
 import { FALLBACK_TIME_ZONE, getDateInTimeZone, isDateWithinBackRange } from '@/lib/date';
 import { ActivityWithLog, CareLog, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 
@@ -751,7 +752,12 @@ export function HomeClient({
             </div>
           )}
 
-          {activeTab === 'nutrition' && <NutritionSection logs={nutritionLogs} onChange={upsertNutritionLog} />}
+          {activeTab === 'nutrition' && (
+            <div className="space-y-4">
+              <VoiceMealLogger onApply={upsertNutritionLog} />
+              <NutritionSection logs={nutritionLogs} onChange={upsertNutritionLog} />
+            </div>
+          )}
 
           {activeTab === 'care' && <CareSection log={careLog} onChange={upsertCareLog} />}
 
