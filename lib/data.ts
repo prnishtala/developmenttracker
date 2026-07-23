@@ -29,7 +29,10 @@ import {
   NapLog,
   NutritionLog,
   ToddlerEvent,
-  ToddlerEventWithFavorite
+  ToddlerEventWithFavorite,
+  ChildProfile,
+  GrowthMeasurement,
+  MilestoneRecord
 } from '@/lib/types';
 import { getServiceSupabaseClient } from '@/lib/supabase/server';
 
@@ -842,4 +845,34 @@ export async function getEventsOnDates(dates: string[]): Promise<ToddlerEvent[]>
 
   if (error) throw error;
   return (data ?? []) as ToddlerEvent[];
+}
+
+export async function getChildProfile(): Promise<ChildProfile | null> {
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from('child_profile')
+    .select('id, name, birth_date, sex')
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as ChildProfile) ?? null;
+}
+
+export async function getGrowthMeasurements(): Promise<GrowthMeasurement[]> {
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from('growth_measurements')
+    .select('id, measured_on, weight_kg, height_cm, head_circumference_cm, notes')
+    .order('measured_on', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as GrowthMeasurement[];
+}
+
+export async function getMilestoneRecords(): Promise<MilestoneRecord[]> {
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from('milestone_records')
+    .select('milestone_key, status, noted_on, notes');
+  if (error) throw error;
+  return (data ?? []) as MilestoneRecord[];
 }
