@@ -79,6 +79,29 @@ export type ToddlerEventWithFavorite = ToddlerEvent & {
   favorited: boolean;
 };
 
+export type ChildProfile = {
+  id: string;
+  name: string;
+  birth_date: string | null;
+  sex: 'female' | 'male';
+};
+
+export type GrowthMeasurement = {
+  id: string;
+  measured_on: string;
+  weight_kg: number | null;
+  height_cm: number | null;
+  head_circumference_cm: number | null;
+  notes: string | null;
+};
+
+export type MilestoneRecord = {
+  milestone_key: string;
+  status: 'achieved' | 'emerging' | 'not_yet';
+  noted_on: string | null;
+  notes: string | null;
+};
+
 export type EventSource = {
   id: string;
   name: string;
