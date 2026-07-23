@@ -8,6 +8,8 @@ import { CareSection } from '@/components/CareSection';
 import { NapSection } from '@/components/NapSection';
 import { NutritionSection } from '@/components/NutritionSection';
 import { VoiceMealLogger } from '@/components/VoiceMealLogger';
+import { AdherenceCard } from '@/components/AdherenceCard';
+import { computeDailyAdherence } from '@/lib/nutrition-adherence';
 import { FALLBACK_TIME_ZONE, getDateInTimeZone, isDateWithinBackRange } from '@/lib/date';
 import { ActivityWithLog, CareLog, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
 
@@ -610,6 +612,11 @@ export function HomeClient({
     });
   }
 
+  const nutritionAdherence = useMemo(
+    () => computeDailyAdherence(nutritionLogs, careLog),
+    [nutritionLogs, careLog]
+  );
+
   return (
     <div className="futuristic-shell">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -754,6 +761,7 @@ export function HomeClient({
 
           {activeTab === 'nutrition' && (
             <div className="space-y-4">
+              <AdherenceCard adherence={nutritionAdherence} />
               <VoiceMealLogger onApply={upsertNutritionLog} />
               <NutritionSection logs={nutritionLogs} onChange={upsertNutritionLog} />
             </div>
