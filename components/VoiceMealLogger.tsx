@@ -68,7 +68,8 @@ export function VoiceMealLogger({ onApply }: VoiceMealLoggerProps) {
         setMeals([]);
         setManualMode(true);
         setPhase('review');
-        setError(data?.reason || 'Could not read that recording. Type what she ate and tap Extract.');
+        const base = data?.reason || 'Could not read that recording. Type what she ate and tap Extract.';
+        setError(data?.detail ? `${base}\n(Details: ${data.detail})` : base);
         return;
       }
       setTranscript(data.transcript);
@@ -349,7 +350,7 @@ export function VoiceMealLogger({ onApply }: VoiceMealLoggerProps) {
         ))}
       </datalist>
 
-      {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
+      {error && <p className="mt-2 whitespace-pre-line break-words text-xs text-amber-200">{error}</p>}
       {note && <p className="mt-2 text-xs text-emerald-200">{note}</p>}
     </section>
   );
