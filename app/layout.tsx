@@ -1,6 +1,7 @@
 import './globals.css';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { authConfigured } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: "Ahana's Development Tracker",
@@ -33,6 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Audit History
               </Link>
             </div>
+            {authConfigured() && (
+              <a className="text-sm font-semibold text-slate-400 hover:text-slate-600" href="/api/logout">
+                Log out
+              </a>
+            )}
           </nav>
           {children}
         </main>
