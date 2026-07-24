@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { parseISO } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ActivityCard } from '@/components/ActivityCard';
 import { CareSection } from '@/components/CareSection';
@@ -24,6 +23,7 @@ type HomeClientProps = {
   initialCareLog: CareLog | null;
   initialNapLogs: NapLog[];
   insights: HomeInsights;
+  initialDayNote: string | null;
 };
 
 type TabKey = 'development' | 'nutrition' | 'care' | 'naps';
@@ -56,11 +56,6 @@ function defaultCareLog(dateValue: string): CareLog {
     bath_completed: false,
     bath_duration: null
   };
-}
-
-function isWeekend(dateValue: string): boolean {
-  const day = parseISO(dateValue).getDay();
-  return day === 0 || day === 6;
 }
 
 function readPendingMutations(): PendingMutation[] {
@@ -120,7 +115,8 @@ export function HomeClient({
   initialNutritionLogs,
   initialCareLog,
   initialNapLogs,
-  insights
+  insights,
+  initialDayNote
 }: HomeClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -130,6 +126,8 @@ export function HomeClient({
   const [nutritionLogs, setNutritionLogs] = useState(initialNutritionLogs);
   const [careLog, setCareLog] = useState(initialCareLog ?? defaultCareLog(date));
   const [napLogs, setNapLogs] = useState(initialNapLogs);
+  const [dayNote, setDayNote] = useState(initialDayNote ?? '');
+  const [dayNoteSaved, setDayNoteSaved] = useState(false);
   const [clientTimeZone, setClientTimeZone] = useState(timeZone);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
@@ -201,7 +199,9 @@ export function HomeClient({
     setNutritionLogs(initialNutritionLogs);
     setCareLog(initialCareLog ?? defaultCareLog(date));
     setNapLogs(initialNapLogs);
-  }, [date, initialActivities, initialCareLog, initialNapLogs, initialNutritionLogs]);
+    setDayNote(initialDayNote ?? '');
+    setDayNoteSaved(false);
+  }, [date, initialActivities, initialCareLog, initialNapLogs, initialNutritionLogs, initialDayNote]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -659,6 +659,29 @@ export function HomeClient({
     [nutritionLogs, careLog]
   );
 
+  async function saveDayNote(notes: string) {
+    const previous = dayNote;
+    setDayNote(notes);
+    setDayNoteSaved(false);
+    startTransition(async () => {
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'generic',
+          endpoint: '/api/day-note',
+          body: { date, notes }
+        },
+        onServerError: () => setDayNote(previous),
+        onSuccess: () => setDayNoteSaved(true)
+      });
+    });
+  }
+
+  function appendDayNote(fragment: string) {
+    const merged = [dayNote.trim(), fragment.trim()].filter(Boolean).join('\n');
+    void saveDayNote(merged);
+  }
+
   return (
     <div className="futuristic-shell">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -768,7 +791,29 @@ export function HomeClient({
           onApplyCare={upsertCareLog}
           onAddNap={addNapFromRecap}
           onCompleteActivity={(activityId) => upsertDailyLog({ activityId, completed: true })}
+          onAppendDayNote={appendDayNote}
         />
+
+        <section className="futuristic-panel p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-white">Day notes / miscellaneous</p>
+              <p className="text-xs text-slate-400">Anything that doesn&apos;t fit a slot above — extra snacks, mood, health, outings.</p>
+            </div>
+            {dayNoteSaved && <span className="text-xs text-emerald-300">Saved</span>}
+          </div>
+          <textarea
+            rows={3}
+            value={dayNote}
+            onChange={(event) => {
+              setDayNote(event.target.value);
+              setDayNoteSaved(false);
+            }}
+            onBlur={() => saveDayNote(dayNote)}
+            placeholder="e.g. Extra biscuit at 4pm, a bit cranky in the evening, runny nose, played in the park with cousins."
+            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/55 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-400/20"
+          />
+        </section>
 
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(Object.keys(TAB_LABELS) as TabKey[]).map((tab) => (
@@ -786,11 +831,6 @@ export function HomeClient({
         <section className="space-y-5">
           {activeTab === 'development' && (
             <div className="space-y-4">
-              {isWeekend(date) && (
-                <p className="futuristic-panel px-4 py-3 text-sm text-slate-200">
-                  Weekday schedule is set for Monday to Friday. No planned development activities for weekends.
-                </p>
-              )}
               {Object.entries(groupedActivities).map(([category, items]) => (
                 <div key={category} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -804,7 +844,7 @@ export function HomeClient({
                   </div>
                 </div>
               ))}
-              {!isWeekend(date) && activities.length === 0 && (
+              {activities.length === 0 && (
                 <p className="futuristic-panel px-4 py-3 text-sm text-slate-200">No activities available.</p>
               )}
             </div>

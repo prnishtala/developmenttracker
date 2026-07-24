@@ -20,6 +20,7 @@ export type RecapExtract = {
   naps: RecapNap[];
   care: RecapCare;
   activities: RecapActivity[];
+  misc: string;
 };
 
 function extractResponseText(payload: any): string {
@@ -122,13 +123,15 @@ function sanitize(payload: unknown, plannedNames: string[]): RecapExtract {
     activities.push({ name, completed: item.completed !== false });
   }
 
-  return { meals, naps, care, activities };
+  const misc = typeof obj.misc === 'string' ? obj.misc.trim().slice(0, 1000) : '';
+
+  return { meals, naps, care, activities, misc };
 }
 
 export async function extractRecap(transcript: string, plannedNames: string[]): Promise<RecapExtract> {
   const apiKey = process.env.OPENAI_API_KEY;
   const text = transcript?.trim();
-  const empty: RecapExtract = { meals: [], naps: [], care: { ironDrops: false, multivitamin: false, vitaminC: false, vitaminCFruit: null, bath: false }, activities: [] };
+  const empty: RecapExtract = { meals: [], naps: [], care: { ironDrops: false, multivitamin: false, vitaminC: false, vitaminCFruit: null, bath: false }, activities: [], misc: '' };
   if (!apiKey || !text) return empty;
 
   try {
@@ -156,7 +159,7 @@ export async function extractRecap(transcript: string, plannedNames: string[]): 
                   ' or null. Only set true when clearly stated. ' +
                   '(4) activities: array of {name, completed} for any play/development activities mentioned as done. Prefer matching these planned activity names when they fit: ' +
                   (plannedNames.length ? plannedNames.join('; ') : '(none planned today)') +
-                  '. Return JSON only with exactly {"meals":[...],"naps":[...],"care":{...},"activities":[...]}. Use empty arrays and false where nothing is said.'
+                  '. (5) misc: a single plain-text string capturing EVERYTHING ELSE mentioned that does not clearly fit the fields above — extra snacks you could not slot, activities that are not in the planned list, extra or night sleep beyond naps, mood, health/teething notes, outings, or any other observation. Never drop information: if in doubt, put it in misc. Return JSON only with exactly {"meals":[...],"naps":[...],"care":{...},"activities":[...],"misc":"..."}. Use empty arrays, false, and "" where nothing is said.'
               }
             ]
           },

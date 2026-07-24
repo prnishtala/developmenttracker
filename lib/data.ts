@@ -94,11 +94,6 @@ function napEntryMinutes(entry: {
   return Math.max(0, end - start);
 }
 
-function weekdayIndex(targetDate: string): number | null {
-  const day = getDay(parseISO(targetDate));
-  if (day < 1 || day > 5) return null;
-  return day - 1;
-}
 
 function percentage(value: number, total: number): number {
   if (total <= 0) return 0;
@@ -127,10 +122,8 @@ export async function getPlannedActivitiesForDate(targetDate: string): Promise<A
   if (activityError) throw activityError;
   if (logError) throw logError;
 
-  const selectedWeekdayIndex = weekdayIndex(targetDate);
-  if (selectedWeekdayIndex === null) {
-    return [];
-  }
+  // Rotate across all 7 days so weekends get activities too (0 = Sun .. 6 = Sat).
+  const rotationIndex = getDay(parseISO(targetDate));
 
   const categoryMap = new Map<string, ActivityWithLog[]>();
   const logByActivityId = new Map((logs ?? []).map((log) => [log.activity_id, log]));
@@ -149,7 +142,7 @@ export async function getPlannedActivitiesForDate(targetDate: string): Promise<A
 
   const planned: ActivityWithLog[] = [];
   for (const [, list] of categoryMap) {
-    const index = selectedWeekdayIndex % list.length;
+    const index = rotationIndex % list.length;
     planned.push(list[index]);
   }
 
@@ -875,4 +868,16 @@ export async function getMilestoneRecords(): Promise<MilestoneRecord[]> {
     .select('milestone_key, status, noted_on, notes');
   if (error) throw error;
   return (data ?? []) as MilestoneRecord[];
+}
+
+export async function getDayNote(targetDate: string): Promise<string | null> {
+  const supabase = getServiceSupabaseClient();
+  // Fail soft so the Home page still loads before the day_notes migration is run.
+  try {
+    const { data, error } = await supabase.from('day_notes').select('notes').eq('date', targetDate).maybeSingle();
+    if (error) return null;
+    return (data?.notes as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
 }
