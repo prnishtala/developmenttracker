@@ -13,6 +13,7 @@ type VoiceRecapProps = {
   onApplyCare: (changes: Partial<CareLog>) => void;
   onAddNap: (values: { startTime: string; endTime: string | null }) => void;
   onCompleteActivity: (activityId: string) => void;
+  onAppendDayNote: (text: string) => void;
 };
 
 type Phase = 'idle' | 'recording' | 'processing' | 'review';
@@ -35,7 +36,7 @@ function pickMimeType(): string | undefined {
   });
 }
 
-export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, onAddNap, onCompleteActivity }: VoiceRecapProps) {
+export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, onAddNap, onCompleteActivity, onAppendDayNote }: VoiceRecapProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -44,6 +45,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
   const [naps, setNaps] = useState<DraftNap[]>([]);
   const [care, setCare] = useState<DraftCare>({ ironDrops: false, multivitamin: false, vitaminC: false, vitaminCFruit: null, bath: false });
   const [acts, setActs] = useState<DraftActivity[]>([]);
+  const [misc, setMisc] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -80,6 +82,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
       naps?: { startTime: string | null; endTime: string | null }[];
       care?: Partial<DraftCare>;
       activities?: { name: string; completed: boolean }[];
+      misc?: string;
     }) => {
       setMeals((recap.meals ?? []).map((m) => ({ id: uid(), ...m })));
       setNaps((recap.naps ?? []).map((n) => ({ id: uid(), startTime: n.startTime ?? '', endTime: n.endTime ?? '' })));
@@ -91,6 +94,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
         bath: Boolean(recap.care?.bath)
       });
       setActs((recap.activities ?? []).map((a) => ({ id: uid(), matchedId: matchActivity(a.name), name: a.name, completed: a.completed })));
+      setMisc(recap.misc ?? '');
     },
     [matchActivity]
   );
@@ -196,6 +200,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
     setNaps([]);
     setCare({ ironDrops: false, multivitamin: false, vitaminC: false, vitaminCFruit: null, bath: false });
     setActs([]);
+    setMisc('');
     setError(null);
     setManual(false);
     setSeconds(0);
@@ -227,6 +232,13 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
       onCompleteActivity(a.matchedId as string);
       count += 1;
     });
+    // Nothing gets dropped: misc + any activities not in today's plan go to day notes.
+    const offPlan = acts.filter((a) => !a.matchedId).map((a) => `Activity: ${a.name}`);
+    const miscFull = [misc.trim(), ...offPlan].filter(Boolean).join('\n');
+    if (miscFull) {
+      onAppendDayNote(miscFull);
+      count += 1;
+    }
     reset();
     setOpen(true);
     setNote(`Logged ${count} item${count === 1 ? '' : 's'} across the day. Check each tab to fine-tune.`);
@@ -234,7 +246,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
 
   const mins = Math.floor(seconds / 60);
   const secs = String(seconds % 60).padStart(2, '0');
-  const hasAnything = meals.length > 0 || naps.length > 0 || acts.length > 0 || care.ironDrops || care.multivitamin || care.vitaminC || care.bath;
+  const hasAnything = meals.length > 0 || naps.length > 0 || acts.length > 0 || care.ironDrops || care.multivitamin || care.vitaminC || care.bath || misc.trim().length > 0;
 
   return (
     <section className="futuristic-panel overflow-hidden p-4 sm:p-5">
@@ -340,6 +352,17 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
                   ))}
                 </div>
               )}
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-cyan-50">Anything else <span className="font-normal text-slate-400">(saved to day notes)</span></p>
+                <textarea
+                  rows={2}
+                  value={misc}
+                  onChange={(e) => setMisc(e.target.value)}
+                  placeholder="Extra snacks, mood, health, outings, off-plan activities…"
+                  className="w-full rounded-xl border border-white/10 bg-slate-950/55 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-400/20"
+                />
+              </div>
 
               <button type="button" onClick={applyAll} disabled={!hasAnything} className="futuristic-button w-full bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 disabled:opacity-50">Save the whole day</button>
             </div>

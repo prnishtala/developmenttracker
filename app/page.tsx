@@ -4,6 +4,7 @@ import { HomeClient } from '@/components/HomeClient';
 import { getDateInTimeZone, isDateWithinBackRange, normalizeTimeZone } from '@/lib/date';
 import {
   getCareLogForDate,
+  getDayNote,
   getHomeInsights,
   getNapLogsForDate,
   getNutritionLogsForDate,
@@ -25,12 +26,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const selectedDate = isDateWithinBackRange(searchParams?.date ?? '', today, 7) ? searchParams?.date ?? today : today;
   const minDate = format(subDays(parseISO(today), 7), 'yyyy-MM-dd');
 
-  const [activities, nutritionLogs, careLog, napLogs, insights] = await Promise.all([
+  const [activities, nutritionLogs, careLog, napLogs, insights, dayNote] = await Promise.all([
     getPlannedActivitiesForDate(selectedDate),
     getNutritionLogsForDate(selectedDate),
     getCareLogForDate(selectedDate),
     getNapLogsForDate(selectedDate),
-    getHomeInsights()
+    getHomeInsights(),
+    getDayNote(selectedDate)
   ]);
 
   return (
@@ -44,6 +46,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       initialCareLog={careLog}
       initialNapLogs={napLogs}
       insights={insights}
+      initialDayNote={dayNote}
     />
   );
 }
