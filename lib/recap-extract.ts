@@ -1,8 +1,19 @@
-import { MEAL_TYPES, QUANTITY_OPTIONS, VITAMIN_C_FRUITS } from '@/lib/constants';
+import {
+  ACTIVITY_CATEGORIES,
+  ACTIVITY_SKILL_TAGS,
+  CATEGORY_DEFAULT_SKILLS,
+  DURATION_OPTIONS,
+  MEAL_TYPES,
+  QUANTITY_OPTIONS,
+  VITAMIN_C_FRUITS
+} from '@/lib/constants';
 
 // One-shot extraction of a full end-of-day recap into everything the trackers
-// need: meals, naps, care (supplements/bath), and which planned activities were
-// done. Anchored to the caretaker's words; every field sanitized.
+// need: meals (including ad-hoc ones), naps, care (supplements/bath), and the
+// development activities that happened — matched to the day's plan when they
+// fit, or classified into a domain so they can be logged on the fly. Anchored
+// to the caretaker's words; every field sanitized. Only genuinely
+// uncategorizable observations land in `misc`.
 
 export type RecapMeal = { mealType: string; mealNotes: string; quantity: string };
 export type RecapNap = { startTime: string | null; endTime: string | null };
@@ -13,7 +24,13 @@ export type RecapCare = {
   vitaminCFruit: string | null;
   bath: boolean;
 };
-export type RecapActivity = { name: string; completed: boolean };
+export type RecapActivity = {
+  name: string;
+  completed: boolean;
+  category: string;
+  skillTags: string[];
+  duration: string;
+};
 
 export type RecapExtract = {
   meals: RecapMeal[];
@@ -73,6 +90,46 @@ function normalizeFruit(value: unknown): string | null {
   return match ?? null;
 }
 
+function normalizeCategory(value: unknown, skillTags: string[]): string {
+  if (typeof value === 'string') {
+    const match = ACTIVITY_CATEGORIES.find((c) => c.toLowerCase() === value.trim().toLowerCase());
+    if (match) return match;
+  }
+  // Infer from skill tags when the category is missing or unknown.
+  if (skillTags.some((t) => t === 'Gross Motor' || t === 'Balance')) return 'Movement';
+  if (skillTags.includes('Fine Motor')) return 'Fine Motor';
+  if (skillTags.some((t) => ['Vocabulary', 'Expressive Language', 'Receptive Language'].includes(t))) return 'Language';
+  if (skillTags.includes('Sensory Integration')) return 'Sensory';
+  return 'Social Emotional';
+}
+
+function parseSkillTags(value: unknown): string[] {
+  const raw = Array.isArray(value) ? value : [];
+  const cleaned: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') continue;
+    const match = ACTIVITY_SKILL_TAGS.find((t) => t.toLowerCase() === item.trim().toLowerCase());
+    if (match && !cleaned.includes(match)) cleaned.push(match);
+  }
+  return cleaned.slice(0, 4);
+}
+
+function normalizeDuration(value: unknown): string {
+  if (typeof value === 'string') {
+    const match = DURATION_OPTIONS.find((o) => o.toLowerCase() === value.trim().toLowerCase());
+    if (match) return match;
+  }
+  // Accept a raw number of minutes and bucket it.
+  const minutes = typeof value === 'number' ? value : typeof value === 'string' ? Number(value.replace(/[^\d.]/g, '')) : NaN;
+  if (Number.isFinite(minutes)) {
+    if (minutes <= 5) return '0 to 5';
+    if (minutes <= 10) return '5 to 10';
+    if (minutes <= 20) return '10 to 20';
+    return '20 plus';
+  }
+  return '5 to 10';
+}
+
 function sanitize(payload: unknown, plannedNames: string[]): RecapExtract {
   const obj = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
 
@@ -99,15 +156,19 @@ function sanitize(payload: unknown, plannedNames: string[]): RecapExtract {
   }
 
   const careRaw = (obj.care && typeof obj.care === 'object' ? obj.care : {}) as Record<string, unknown>;
+  const vitaminCFruit = normalizeFruit(careRaw.vitaminCFruit);
   const care: RecapCare = {
     ironDrops: careRaw.ironDrops === true,
     multivitamin: careRaw.multivitamin === true,
-    vitaminC: careRaw.vitaminC === true,
-    vitaminCFruit: normalizeFruit(careRaw.vitaminCFruit),
+    // Any recognized vitamin-C fruit implies coverage even if the model forgot
+    // to flip the boolean (e.g. caretaker just said "she had kiwi").
+    vitaminC: careRaw.vitaminC === true || vitaminCFruit !== null,
+    vitaminCFruit,
     bath: careRaw.bath === true
   };
 
-  // Match extracted activity names to the day's planned activities.
+  // Match extracted activity names to the day's planned activities; classify
+  // every activity into a domain so off-plan ones can still be logged.
   const activitiesRaw = Array.isArray(obj.activities) ? obj.activities : [];
   const activities: RecapActivity[] = [];
   const seenAct = new Set<string>();
@@ -117,10 +178,19 @@ function sanitize(payload: unknown, plannedNames: string[]): RecapExtract {
     if (!spoken) continue;
     const lower = spoken.toLowerCase();
     const match = plannedNames.find((n) => n.toLowerCase() === lower || n.toLowerCase().includes(lower) || lower.includes(n.toLowerCase()));
-    const name = match ?? spoken;
+    const name = (match ?? spoken).slice(0, 80);
     if (seenAct.has(name.toLowerCase())) continue;
     seenAct.add(name.toLowerCase());
-    activities.push({ name, completed: item.completed !== false });
+    const rawTags = parseSkillTags(item.skillTags ?? item.skills);
+    const category = normalizeCategory(item.category, rawTags);
+    const skillTags = rawTags.length ? rawTags : CATEGORY_DEFAULT_SKILLS[category] ?? ['Attention'];
+    activities.push({
+      name,
+      completed: item.completed !== false,
+      category,
+      skillTags,
+      duration: normalizeDuration(item.duration ?? item.durationMinutes)
+    });
   }
 
   const misc = typeof obj.misc === 'string' ? obj.misc.trim().slice(0, 1000) : '';
@@ -147,19 +217,26 @@ export async function extractRecap(transcript: string, plannedNames: string[]): 
               {
                 type: 'input_text',
                 text:
-                  "You convert a caretaker's spoken end-of-day recap of a toddler's day into structured data. Use ONLY what is said. Extract four things: " +
+                  "You convert a caretaker's spoken end-of-day recap of a toddler's day into structured data. Use ONLY what is said, but classify it generously so nothing useful is lost to a catch-all. Extract five things: " +
                   '(1) meals: array of {mealType, mealNotes, quantity}. Map mealType to one of: ' +
                   MEAL_TYPES.join(', ') +
-                  ' (or a short custom label). quantity is one of ' +
+                  '. If a food was clearly eaten but does not fit one of those slots (an extra snack, fruit, a treat, a post-nap bite), STILL return it as a meal with a short custom mealType label like "Ad hoc snack" or "Fruit" — do NOT drop it into misc. Put the actual food in mealNotes. quantity is one of ' +
                   QUANTITY_OPTIONS.join(', ') +
-                  '. Skip refused meals. ' +
-                  '(2) naps: array of {startTime, endTime} in 24h HH:MM; use null for a time not stated. ' +
-                  '(3) care: {ironDrops, multivitamin, vitaminC, vitaminCFruit, bath} — booleans for whether iron drops, a multivitamin, vitamin C, and a bath happened; vitaminCFruit is one of ' +
+                  '. Skip only meals that were refused/not eaten. ' +
+                  '(2) naps: array of {startTime, endTime} in 24h HH:MM; use null for a time not stated. Include every nap mentioned. ' +
+                  '(3) care: {ironDrops, multivitamin, vitaminC, vitaminCFruit, bath}. ironDrops/multivitamin/bath are booleans set true only when clearly stated. For vitamin C: set vitaminC=true AND set vitaminCFruit whenever the child ate a vitamin-C-rich fruit, EVEN IF the words "vitamin C" were never said. vitaminCFruit must be one of ' +
                   VITAMIN_C_FRUITS.join(', ') +
-                  ' or null. Only set true when clearly stated. ' +
-                  '(4) activities: array of {name, completed} for any play/development activities mentioned as done. Prefer matching these planned activity names when they fit: ' +
+                  ' (map synonyms: sweet lime/sweet lemon->Mosambi; strawberries->Strawberry; kiwifruit->Kiwi), otherwise null. Kiwi, orange, guava, papaya, mosambi and strawberry are all vitamin-C fruits. ' +
+                  '(4) activities: array of {name, completed, category, skillTags, duration} for EVERY play/development/outing/motor moment mentioned as happening — not only the planned ones. Reuse one of these planned names when it clearly fits: ' +
                   (plannedNames.length ? plannedNames.join('; ') : '(none planned today)') +
-                  '. (5) misc: a single plain-text string capturing EVERYTHING ELSE mentioned that does not clearly fit the fields above — extra snacks you could not slot, activities that are not in the planned list, extra or night sleep beyond naps, mood, health/teething notes, outings, or any other observation. Never drop information: if in doubt, put it in misc. Return JSON only with exactly {"meals":[...],"naps":[...],"care":{...},"activities":[...],"misc":"..."}. Use empty arrays, false, and "" where nothing is said.'
+                  '. Otherwise write a short natural name for what happened (e.g. "Played with balls downstairs", "Stacked cups"). category MUST be one of ' +
+                  ACTIVITY_CATEGORIES.join(', ') +
+                  '. skillTags is 1-3 items from ' +
+                  ACTIVITY_SKILL_TAGS.join(', ') +
+                  ' that best fit the activity (e.g. going down stairs and running = Movement/[Gross Motor, Balance]; naming animals = Language/[Vocabulary, Expressive Language]; playing with cousins = Social Emotional/[Emotional Regulation]). duration is one of ' +
+                  DURATION_OPTIONS.join(', ') +
+                  " (minutes), your best estimate from the recap, default '5 to 10'. Do NOT leave described play out of this list. " +
+                  '(5) misc: a single plain-text string capturing ONLY things that truly do not fit any field above — mood, health/teething notes, weather, logistics, general observations. Do NOT put foods, naps, supplements, baths, or activities here; those belong in their own fields. Return JSON only with exactly {"meals":[...],"naps":[...],"care":{...},"activities":[...],"misc":"..."}. Use empty arrays, false, and "" where nothing is said.'
               }
             ]
           },

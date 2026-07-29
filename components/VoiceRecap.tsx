@@ -13,6 +13,7 @@ type VoiceRecapProps = {
   onApplyCare: (changes: Partial<CareLog>) => void;
   onAddNap: (values: { startTime: string; endTime: string | null }) => void;
   onCompleteActivity: (activityId: string) => void;
+  onLogActivity: (payload: { name: string; category: string; skillTags: string[]; duration: string }) => void;
   onAppendDayNote: (text: string) => void;
 };
 
@@ -20,9 +21,23 @@ type Phase = 'idle' | 'recording' | 'processing' | 'review';
 type DraftMeal = { id: string; mealType: string; mealNotes: string; quantity: string };
 type DraftNap = { id: string; startTime: string; endTime: string };
 type DraftCare = { ironDrops: boolean; multivitamin: boolean; vitaminC: boolean; vitaminCFruit: string | null; bath: boolean };
-type DraftActivity = { id: string; matchedId: string | null; name: string; completed: boolean };
+type DraftActivity = {
+  id: string;
+  matchedId: string | null;
+  name: string;
+  completed: boolean;
+  category: string;
+  skillTags: string[];
+  duration: string;
+};
 
-const MAX_SECONDS = 150;
+const MAX_SECONDS = 300;
+// Speech-quality bitrate keeps a 5-minute recap well under Vercel's request-body
+// limit while staying more than good enough for Whisper.
+const AUDIO_BITS_PER_SECOND = 32000;
+// Flush a chunk every second so long recordings are never lost/truncated on
+// browsers (notably iOS Safari) that otherwise only emit data once on stop.
+const RECORDER_TIMESLICE_MS = 1000;
 const uid = () => crypto.randomUUID();
 
 function pickMimeType(): string | undefined {
@@ -36,7 +51,7 @@ function pickMimeType(): string | undefined {
   });
 }
 
-export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, onAddNap, onCompleteActivity, onAppendDayNote }: VoiceRecapProps) {
+export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, onAddNap, onCompleteActivity, onLogActivity, onAppendDayNote }: VoiceRecapProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -81,7 +96,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
       meals?: { mealType: string; mealNotes: string; quantity: string }[];
       naps?: { startTime: string | null; endTime: string | null }[];
       care?: Partial<DraftCare>;
-      activities?: { name: string; completed: boolean }[];
+      activities?: { name: string; completed: boolean; category?: string; skillTags?: string[]; duration?: string }[];
       misc?: string;
     }) => {
       setMeals((recap.meals ?? []).map((m) => ({ id: uid(), ...m })));
@@ -93,7 +108,17 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
         vitaminCFruit: recap.care?.vitaminCFruit ?? null,
         bath: Boolean(recap.care?.bath)
       });
-      setActs((recap.activities ?? []).map((a) => ({ id: uid(), matchedId: matchActivity(a.name), name: a.name, completed: a.completed })));
+      setActs(
+        (recap.activities ?? []).map((a) => ({
+          id: uid(),
+          matchedId: matchActivity(a.name),
+          name: a.name,
+          completed: a.completed,
+          category: a.category ?? 'Social Emotional',
+          skillTags: a.skillTags ?? [],
+          duration: a.duration ?? '5 to 10'
+        }))
+      );
       setMisc(recap.misc ?? '');
     },
     [matchActivity]
@@ -141,7 +166,15 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const mimeType = pickMimeType();
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const options: MediaRecorderOptions = { audioBitsPerSecond: AUDIO_BITS_PER_SECOND };
+      if (mimeType) options.mimeType = mimeType;
+      let recorder: MediaRecorder;
+      try {
+        recorder = new MediaRecorder(stream, options);
+      } catch {
+        // Some browsers reject the bitrate hint; fall back to defaults.
+        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      }
       chunksRef.current = [];
       recorder.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
       recorder.onstop = () => {
@@ -149,7 +182,9 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
         cleanup();
         void upload(blob);
       };
-      recorder.start();
+      // Timeslice makes the recorder emit chunks periodically instead of only at
+      // stop, which is what keeps multi-minute recaps from being cut off.
+      recorder.start(RECORDER_TIMESLICE_MS);
       recorderRef.current = recorder;
       setSeconds(0);
       setPhase('recording');
@@ -228,13 +263,19 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
       onApplyCare(careChanges);
       count += 1;
     }
-    acts.filter((a) => a.completed && a.matchedId).forEach((a) => {
-      onCompleteActivity(a.matchedId as string);
+    acts.filter((a) => a.completed).forEach((a) => {
+      if (a.matchedId) {
+        // Fits a planned activity — just mark it complete.
+        onCompleteActivity(a.matchedId);
+      } else {
+        // Off-plan: log it as a real (ad-hoc) development activity so it feeds
+        // the dashboard, instead of dropping it into free-text notes.
+        onLogActivity({ name: a.name, category: a.category, skillTags: a.skillTags, duration: a.duration });
+      }
       count += 1;
     });
-    // Nothing gets dropped: misc + any activities not in today's plan go to day notes.
-    const offPlan = acts.filter((a) => !a.matchedId).map((a) => `Activity: ${a.name}`);
-    const miscFull = [misc.trim(), ...offPlan].filter(Boolean).join('\n');
+    // Only genuinely uncategorized observations land in day notes now.
+    const miscFull = misc.trim();
     if (miscFull) {
       onAppendDayNote(miscFull);
       count += 1;
@@ -344,12 +385,17 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold text-cyan-50">Activities</p>
                   {acts.map((a) => (
-                    <label key={a.id} className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm ${a.matchedId ? 'border-white/10 bg-white/5 text-slate-100' : 'border-white/5 bg-white/5 text-slate-500'}`}>
-                      <input type="checkbox" checked={a.completed && Boolean(a.matchedId)} disabled={!a.matchedId} onChange={(e) => setActs((c) => c.map((x) => (x.id === a.id ? { ...x, completed: e.target.checked } : x)))} className="h-4 w-4 accent-cyan-400" />
+                    <label key={a.id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-100">
+                      <input type="checkbox" checked={a.completed} onChange={(e) => setActs((c) => c.map((x) => (x.id === a.id ? { ...x, completed: e.target.checked } : x)))} className="h-4 w-4 accent-cyan-400" />
                       <span className="flex-1">{a.name}</span>
-                      {!a.matchedId && <span className="text-[10px] uppercase tracking-wide text-slate-500">not in today&apos;s plan</span>}
+                      {a.matchedId ? (
+                        <span className="text-[10px] uppercase tracking-wide text-emerald-300/80">in plan</span>
+                      ) : (
+                        <span className="text-[10px] uppercase tracking-wide text-cyan-200/80">new · {a.category}</span>
+                      )}
                     </label>
                   ))}
+                  <p className="text-[11px] text-slate-500">New activities are logged as extra development activities and feed the dashboard.</p>
                 </div>
               )}
 
@@ -359,7 +405,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
                   rows={2}
                   value={misc}
                   onChange={(e) => setMisc(e.target.value)}
-                  placeholder="Extra snacks, mood, health, outings, off-plan activities…"
+                  placeholder="Mood, health, teething, weather, logistics…"
                   className="w-full rounded-xl border border-white/10 bg-slate-950/55 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-400/20"
                 />
               </div>
