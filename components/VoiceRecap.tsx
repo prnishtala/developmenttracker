@@ -9,7 +9,7 @@ type PlannedActivity = { id: string; name: string };
 type VoiceRecapProps = {
   date: string;
   plannedActivities: PlannedActivity[];
-  onApplyMeal: (payload: { mealType: string; hadMeal: boolean; quantity: string | null; mealNotes: string | null }) => void;
+  onApplyMeal: (payload: { mealType: string; hadMeal: boolean; quantity: string | null; mealNotes: string | null; mode?: 'merge' | 'replace' }) => void;
   onApplyCare: (changes: Partial<CareLog>) => void;
   onAddNap: (values: { startTime: string; endTime: string | null }) => void;
   onCompleteActivity: (activityId: string) => void;
@@ -244,7 +244,7 @@ export function VoiceRecap({ date, plannedActivities, onApplyMeal, onApplyCare, 
   function applyAll() {
     let count = 0;
     meals.filter((m) => m.mealType.trim() && m.mealNotes.trim()).forEach((m) => {
-      onApplyMeal({ mealType: m.mealType.trim(), hadMeal: true, quantity: m.quantity || 'Normal', mealNotes: m.mealNotes.trim() });
+      onApplyMeal({ mealType: m.mealType.trim(), hadMeal: true, quantity: m.quantity || 'Normal', mealNotes: m.mealNotes.trim(), mode: 'merge' });
       count += 1;
     });
     naps.filter((n) => n.startTime).forEach((n) => {

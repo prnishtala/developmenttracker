@@ -9,6 +9,7 @@ import { NutritionSection } from '@/components/NutritionSection';
 import { VoiceMealLogger } from '@/components/VoiceMealLogger';
 import { AdherenceCard } from '@/components/AdherenceCard';
 import { computeDailyAdherence } from '@/lib/nutrition-adherence';
+import { higherQuantity, mergeDayNote, mergeMealNotes } from '@/lib/recap-merge';
 import { VoiceRecap } from '@/components/VoiceRecap';
 import { FALLBACK_TIME_ZONE, getDateInTimeZone, isDateWithinBackRange } from '@/lib/date';
 import { ActivityWithLog, CareLog, HomeInsights, NapLog, NutritionLog } from '@/lib/types';
@@ -419,8 +420,13 @@ export function HomeClient({
     hadMeal: boolean;
     quantity: string | null;
     mealNotes: string | null;
+    // 'merge' (used by the voice recap) makes a repeat entry for the same slot
+    // additive — union the notes and keep the higher quantity — instead of
+    // overwriting. Manual edits use the default 'replace'.
+    mode?: 'merge' | 'replace';
   }) {
     const previous = nutritionLogs;
+    const merge = payload.mode === 'merge' && payload.hadMeal;
 
     setNutritionLogs((current) => {
       const existing = current.find((item) => item.meal_type === payload.mealType);
@@ -437,13 +443,21 @@ export function HomeClient({
           }
         ];
       }
+      const nextNotes =
+        merge && existing.had_meal
+          ? mergeMealNotes(existing.meal_notes, payload.mealNotes) || null
+          : payload.hadMeal
+            ? payload.mealNotes
+            : null;
+      const nextQuantity =
+        merge && existing.had_meal ? higherQuantity(existing.quantity, payload.quantity) : payload.quantity;
       return current.map((item) =>
         item.meal_type === payload.mealType
           ? {
               ...item,
               had_meal: payload.hadMeal,
-              quantity: payload.quantity,
-              meal_notes: payload.hadMeal ? payload.mealNotes : null
+              quantity: nextQuantity,
+              meal_notes: nextNotes
             }
           : item
       );
@@ -562,6 +576,16 @@ export function HomeClient({
   }
 
   async function addNapFromRecap(values: { startTime: string; endTime: string | null }) {
+    // Additive recaps: a nap starting at the same time is the same nap, so skip
+    // re-adding it. (The server dedupes too, for the multi-device case.)
+    const duplicate = napLogs.find((nap) => nap.start_time.slice(0, 5) === values.startTime.slice(0, 5));
+    if (duplicate) {
+      if (values.endTime && !duplicate.end_time) {
+        void updateNap(duplicate.id, { end_time: values.endTime, entry_mode: 'end_time', duration_minutes: null });
+      }
+      return;
+    }
+
     const tempNapId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const hasEnd = Boolean(values.endTime);
     const tempNap: NapLog = {
@@ -682,8 +706,9 @@ export function HomeClient({
   }
 
   function appendDayNote(fragment: string) {
-    const merged = [dayNote.trim(), fragment.trim()].filter(Boolean).join('\n');
-    void saveDayNote(merged);
+    // Dedupe lines so repeated recaps don't stack the same observation.
+    const merged = mergeDayNote(dayNote, fragment);
+    if (merged !== dayNote) void saveDayNote(merged);
   }
 
   // Log a development activity described in the voice recap that isn't in

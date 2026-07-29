@@ -49,6 +49,37 @@ export async function POST(request: NextRequest) {
     };
 
     if (action === 'create') {
+      // Dedupe repeated recaps: a nap starting at the same time on the same day
+      // is the same nap. Update the existing row (filling in an end time if this
+      // recap has one) instead of inserting a duplicate.
+      const { data: existingNap } = await supabase
+        .from('nap_logs')
+        .select('id, end_time, duration_minutes, entry_mode')
+        .eq('date', date)
+        .eq('start_time', startTime)
+        .maybeSingle();
+
+      if (existingNap?.id) {
+        // Only overwrite the existing nap's timing when this recap actually adds
+        // detail (an end time / duration); otherwise leave the richer row as-is.
+        const addsDetail = payload.end_time !== null || payload.duration_minutes !== null;
+        if (addsDetail) {
+          await supabase.from('nap_logs').update(payload).eq('id', existingNap.id);
+        }
+        const { data: merged } = await supabase.from('nap_logs').select().eq('id', existingNap.id).single();
+
+        await writeAuditLog(supabase, requestMeta, {
+          eventType: 'nap_log',
+          action: 'create_deduped',
+          entityType: 'nap_logs',
+          entityId: existingNap.id,
+          eventDate: date,
+          payload
+        });
+
+        return NextResponse.json({ ok: true, nap: merged, deduped: true });
+      }
+
       const { data, error } = await supabase.from('nap_logs').insert(payload).select().single();
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
