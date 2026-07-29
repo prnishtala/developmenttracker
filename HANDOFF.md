@@ -5,7 +5,7 @@ activities, nutrition, care, naps, growth, milestones, a local-events finder,
 and a meal plan. This doc is a context snapshot for picking the project back up.
 
 ## Project basics
-- **Repo:** `prnishtala/developmenttracker` · **Working branch:** `claude/toddler-development-activities-64ylwu`
+- **Repo:** `prnishtala/developmenttracker` · **Working branch:** `claude/day-recap-recording-issues-cnw47v`
 - **Stack:** Next.js 14 (App Router) · React · TypeScript · Tailwind · **Supabase** (Postgres) · **Vercel** · **OpenAI** (Responses API for text, Whisper for audio) · web-push.
 - **Prod:** `developmenttracker.vercel.app` · deploy = merge to `main` → Vercel auto-deploys.
 
@@ -32,8 +32,13 @@ and a meal plan. This doc is a context snapshot for picking the project back up.
 | #9 | **Universal voice recap** — one note → meals + naps + care + planned activities | none |
 | #10 | **Optional login gate** — env creds, middleware, HMAC cookie, `/login` + Log out | none |
 | #11 | **Weekends usable** (7-day activity rotation) + recap **misc → Day notes** card | `202607240001_day_notes.sql` (`day_notes`) |
+| #12 | **Voice recap overhaul**: (a) full-length capture — `MediaRecorder` timeslice + 32 kbps + 5-min cap (was truncating at ~30–40 s); (b) vitamin-C fruits (kiwi, etc.) now flip `vitaminC` coverage even when "vitamin C" isn't said; (c) recap now populates **everything** — ad-hoc meals → meal slots, and off-plan play → **ad-hoc development activities** created on the fly (classified into a category + skill tags + duration) that feed dashboard trends, instead of dumping to Day notes; only true leftovers stay in misc | `202607290001_ad_hoc_activities.sql` (`activities.ad_hoc`) |
 
 ## Outstanding TODOs (owner actions)
+0. Run **`202607290001_ad_hoc_activities.sql`** in Supabase (adds `activities.ad_hoc`).
+   Until then, voice-created activities still log fine (the API + reads fail soft),
+   but they are **not** excluded from the planned Home rotation and won't show in
+   the "Extra activities" card.
 1. Run **`202607240001_day_notes.sql`** in Supabase (Day notes card won't persist
    until then; Home still loads — `getDayNote` fails soft).
 2. Confirm **`202607230001_growth_and_milestones.sql`** is applied, then open
@@ -66,7 +71,12 @@ and a meal plan. This doc is a context snapshot for picking the project back up.
 ## Known caveats / tuning
 - WHO growth bands are approximate anchor values (girls only); boys' band not loaded. Pediatrician's chart is authoritative.
 - Curated event scraping is unreliable (library sites 403 bots); breadth comes from the **AI-discovery pass** (unverified, badged) + hand-seeded verified attractions.
-- Recap only completes **planned** activities; off-plan items go to Day notes. Real-recap extraction quality still needs tuning.
+- Recap now completes planned activities **and** creates ad-hoc development
+  activities for off-plan play (`activities.ad_hoc = true`), so only genuinely
+  uncategorized notes go to Day notes. Ad-hoc activities are excluded from the
+  planned rotation but feed dashboard skill/language/motor trends via `daily_logs`.
+  Extraction quality still depends on the model; the review UI lets the caretaker
+  correct before saving.
 - Verification in a sandbox = `tsc --noEmit` + `next lint` + Vercel preview build; `next build` needs Supabase env, and the prod domain is not reachable from the assistant's environment.
 
 ## Next ideas discussed (not built)

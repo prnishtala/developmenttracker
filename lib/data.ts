@@ -111,15 +111,35 @@ function toneFromCoverage(coveragePercent: number): DashboardTone {
   return 'watch';
 }
 
+// Fetch the pool of planned (non ad-hoc) activities. Falls back gracefully to
+// the pre-ad_hoc schema so Home still works before the ad_hoc migration is run.
+async function fetchPlannableActivities() {
+  const supabase = getServiceSupabaseClient();
+  const withAdHoc = await supabase
+    .from('activities')
+    .select('id, name, category, skill_tags, how_to')
+    .eq('ad_hoc', false)
+    .order('category')
+    .order('name');
+  if (!withAdHoc.error) return withAdHoc.data ?? [];
+
+  const legacy = await supabase
+    .from('activities')
+    .select('id, name, category, skill_tags, how_to')
+    .order('category')
+    .order('name');
+  if (legacy.error) throw legacy.error;
+  return legacy.data ?? [];
+}
+
 export async function getPlannedActivitiesForDate(targetDate: string): Promise<ActivityWithLog[]> {
   const supabase = getServiceSupabaseClient();
 
-  const [{ data: activities, error: activityError }, { data: logs, error: logError }] = await Promise.all([
-    supabase.from('activities').select('id, name, category, skill_tags, how_to').order('category').order('name'),
+  const [activities, { data: logs, error: logError }] = await Promise.all([
+    fetchPlannableActivities(),
     supabase.from('daily_logs').select('id, date, activity_id, completed, rating, duration').eq('date', targetDate)
   ]);
 
-  if (activityError) throw activityError;
   if (logError) throw logError;
 
   // Rotate across all 7 days so weekends get activities too (0 = Sun .. 6 = Sat).
@@ -147,6 +167,41 @@ export async function getPlannedActivitiesForDate(targetDate: string): Promise<A
   }
 
   return planned;
+}
+
+// Ad-hoc activities (created on the fly by the voice recap) that were logged as
+// completed on a given date. These are shown as "extra" activities on Home so
+// the caretaker can see what the recap captured, and they feed dashboard
+// trends via daily_logs like any other activity. Fails soft to [] before the
+// ad_hoc migration is applied.
+export async function getAdHocActivitiesForDate(targetDate: string): Promise<ActivityWithLog[]> {
+  const supabase = getServiceSupabaseClient();
+  try {
+    const { data: logs, error: logError } = await supabase
+      .from('daily_logs')
+      .select('id, date, activity_id, completed, rating, duration')
+      .eq('date', targetDate)
+      .eq('completed', true);
+    if (logError) return [];
+
+    const activityIds = (logs ?? []).map((log) => log.activity_id).filter(Boolean);
+    if (activityIds.length === 0) return [];
+
+    const { data: activities, error: activityError } = await supabase
+      .from('activities')
+      .select('id, name, category, skill_tags, how_to, ad_hoc')
+      .eq('ad_hoc', true)
+      .in('id', activityIds);
+    if (activityError) return [];
+
+    const logByActivityId = new Map((logs ?? []).map((log) => [log.activity_id, log]));
+    return (activities ?? []).map((activity) => {
+      const { ad_hoc: _adHoc, ...rest } = activity as Record<string, unknown>;
+      return { ...(rest as Omit<ActivityWithLog, 'log'>), log: logByActivityId.get(activity.id) ?? null };
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function getAuditLogs(limit = 200): Promise<AuditLog[]> {

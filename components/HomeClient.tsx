@@ -19,6 +19,7 @@ type HomeClientProps = {
   maxDate: string;
   timeZone: string;
   initialActivities: ActivityWithLog[];
+  initialAdHocActivities: ActivityWithLog[];
   initialNutritionLogs: NutritionLog[];
   initialCareLog: CareLog | null;
   initialNapLogs: NapLog[];
@@ -112,6 +113,7 @@ export function HomeClient({
   maxDate,
   timeZone,
   initialActivities,
+  initialAdHocActivities,
   initialNutritionLogs,
   initialCareLog,
   initialNapLogs,
@@ -123,6 +125,7 @@ export function HomeClient({
   const syncingRef = useRef(false);
   const [activeTab, setActiveTab] = useState<TabKey>('development');
   const [activities, setActivities] = useState(initialActivities);
+  const [adHocActivities, setAdHocActivities] = useState(initialAdHocActivities);
   const [nutritionLogs, setNutritionLogs] = useState(initialNutritionLogs);
   const [careLog, setCareLog] = useState(initialCareLog ?? defaultCareLog(date));
   const [napLogs, setNapLogs] = useState(initialNapLogs);
@@ -196,12 +199,13 @@ export function HomeClient({
 
   useEffect(() => {
     setActivities(initialActivities);
+    setAdHocActivities(initialAdHocActivities);
     setNutritionLogs(initialNutritionLogs);
     setCareLog(initialCareLog ?? defaultCareLog(date));
     setNapLogs(initialNapLogs);
     setDayNote(initialDayNote ?? '');
     setDayNoteSaved(false);
-  }, [date, initialActivities, initialCareLog, initialNapLogs, initialNutritionLogs, initialDayNote]);
+  }, [date, initialActivities, initialAdHocActivities, initialCareLog, initialNapLogs, initialNutritionLogs, initialDayNote]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -682,6 +686,60 @@ export function HomeClient({
     void saveDayNote(merged);
   }
 
+  // Log a development activity described in the voice recap that isn't in
+  // today's plan. Creates the activity on the fly server-side (flagged ad_hoc)
+  // and records it as completed so it shows here and feeds the dashboard.
+  async function logAdHocActivity(payload: {
+    name: string;
+    category: string;
+    skillTags: string[];
+    duration: string;
+  }) {
+    const trimmed = payload.name.trim();
+    if (!trimmed) return;
+    const alreadyShown = adHocActivities.some((item) => item.name.toLowerCase() === trimmed.toLowerCase());
+    const tempId = `temp-act-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    if (!alreadyShown) {
+      setAdHocActivities((current) => [
+        ...current,
+        {
+          id: tempId,
+          name: trimmed,
+          category: payload.category,
+          skill_tags: payload.skillTags,
+          how_to: null,
+          log: { id: '', date, activity_id: tempId, completed: true, rating: null, duration: payload.duration }
+        }
+      ]);
+    }
+
+    startTransition(async () => {
+      await sendMutationOrQueue({
+        mutation: {
+          id: crypto.randomUUID(),
+          kind: 'generic',
+          endpoint: '/api/activity-log',
+          body: { date, name: trimmed, category: payload.category, skillTags: payload.skillTags, duration: payload.duration }
+        },
+        onServerError: () => {
+          if (!alreadyShown) setAdHocActivities((current) => current.filter((item) => item.id !== tempId));
+        },
+        onSuccess: (response) => {
+          const activity = (response as { activity?: { id?: string } })?.activity;
+          if (!alreadyShown && activity?.id) {
+            setAdHocActivities((current) =>
+              current.map((item) =>
+                item.id === tempId
+                  ? { ...item, id: activity.id as string, log: item.log ? { ...item.log, activity_id: activity.id as string } : item.log }
+                  : item
+              )
+            );
+          }
+        }
+      });
+    });
+  }
+
   return (
     <div className="futuristic-shell">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -791,6 +849,7 @@ export function HomeClient({
           onApplyCare={upsertCareLog}
           onAddNap={addNapFromRecap}
           onCompleteActivity={(activityId) => upsertDailyLog({ activityId, completed: true })}
+          onLogActivity={logAdHocActivity}
           onAppendDayNote={appendDayNote}
         />
 
@@ -846,6 +905,34 @@ export function HomeClient({
               ))}
               {activities.length === 0 && (
                 <p className="futuristic-panel px-4 py-3 text-sm text-slate-200">No activities available.</p>
+              )}
+
+              {adHocActivities.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-white">Extra activities</h2>
+                    <span className="text-xs uppercase tracking-[0.18em] text-slate-400">from voice recap</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Off-plan moments captured from the day&apos;s recap. These count toward development trends on the
+                    dashboard.
+                  </p>
+                  <div className="space-y-2">
+                    {adHocActivities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-300/20 bg-emerald-400/5 px-3 py-2.5 text-sm text-slate-100"
+                      >
+                        <span aria-hidden className="text-emerald-300">✓</span>
+                        <span className="flex-1 font-medium">{activity.name}</span>
+                        <span className="futuristic-chip bg-white/5 text-slate-300">{activity.category}</span>
+                        {activity.log?.duration && (
+                          <span className="text-xs text-slate-400">{activity.log.duration} min</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}

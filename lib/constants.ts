@@ -28,6 +28,39 @@ export const QUANTITY_OPTIONS = ['Low', 'Normal', 'High'] as const;
 export const VITAMIN_C_FRUITS = ['Orange', 'Mosambi', 'Guava', 'Kiwi', 'Strawberry', 'Papaya'] as const;
 export const BATH_DURATION_OPTIONS = DURATION_OPTIONS;
 
+// Development-activity taxonomy used when the voice recap invents an activity
+// on the fly (an off-plan thing the caretaker described). These mirror the
+// categories and skill tags already seeded in the `activities` table so that
+// ad-hoc activities feed the same dashboard trends as planned ones.
+export const ACTIVITY_CATEGORIES = ['Movement', 'Fine Motor', 'Language', 'Sensory', 'Social Emotional'] as const;
+
+export const ACTIVITY_SKILL_TAGS = [
+  'Gross Motor',
+  'Fine Motor',
+  'Balance',
+  'Coordination',
+  'Vocabulary',
+  'Expressive Language',
+  'Receptive Language',
+  'Independence',
+  'Problem Solving',
+  'Sensory Integration',
+  'Attention',
+  'Emotional Regulation',
+  'Imitation',
+  'Rhythm'
+] as const;
+
+// Default skill tags per category, used when the model gives a category but no
+// (or no valid) skill tags.
+export const CATEGORY_DEFAULT_SKILLS: Record<string, string[]> = {
+  Movement: ['Gross Motor', 'Coordination'],
+  'Fine Motor': ['Fine Motor', 'Coordination'],
+  Language: ['Vocabulary', 'Receptive Language'],
+  Sensory: ['Sensory Integration', 'Attention'],
+  'Social Emotional': ['Emotional Regulation', 'Attention']
+};
+
 export const NAP_DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 120] as const;
 
 // "Things To Do" — local DFW toddler events discovery
