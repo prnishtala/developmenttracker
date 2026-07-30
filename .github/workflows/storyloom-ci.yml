@@ -1,0 +1,33 @@
+# CI for the StoryLoom project (lives in ./storyloom). Scoped by path so it never runs for the
+# unrelated app at the repo root.
+name: storyloom-ci
+
+on:
+  push:
+    paths:
+      - "storyloom/**"
+      - ".github/workflows/storyloom-ci.yml"
+  pull_request:
+    paths:
+      - "storyloom/**"
+      - ".github/workflows/storyloom-ci.yml"
+
+defaults:
+  run:
+    working-directory: storyloom
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check src tests
+      - name: Test
+        # imageio-ffmpeg ships a static ffmpeg, so the offline audio pipeline runs in CI.
+        run: pytest -q

@@ -1,0 +1,50 @@
+# Local orchestration for StoryLoom.
+# In M1 these services run but are unused — the pipeline reads a seeded bible JSON from disk and
+# writes MP3s to ./out/. They exist now so M3 (DB continuity) and M4 (queue + storage) build on them.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: storyloom
+      POSTGRES_PASSWORD: storyloom
+      POSTGRES_DB: storyloom
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U storyloom"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: storyloom
+      MINIO_ROOT_PASSWORD: storyloom123
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # console
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  miniodata:

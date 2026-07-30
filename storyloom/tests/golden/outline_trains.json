@@ -1,0 +1,37 @@
+{
+  "title": "Ahana and the Trains",
+  "logline": "A cozy bedtime visit with Mira the Mongoose about trains, ending calm.",
+  "beats": [
+    {
+      "n": 1,
+      "beat": "Ahana notices something about trains and grows curious.",
+      "emotion": "gentle curiosity"
+    },
+    {
+      "n": 2,
+      "beat": "Mira the Mongoose arrives and they set off together to look closer.",
+      "emotion": "warm excitement"
+    },
+    {
+      "n": 3,
+      "beat": "They meet a small, easy puzzle to do with trains.",
+      "emotion": "playful wondering"
+    },
+    {
+      "n": 4,
+      "beat": "Ahana helps solve it by being kind and patient.",
+      "emotion": "quiet pride"
+    },
+    {
+      "n": 5,
+      "beat": "Mira the Mongoose says goodnight and Ahana settles down, cozy and calm.",
+      "emotion": "sleepy and safe"
+    }
+  ],
+  "characters": [
+    "mira"
+  ],
+  "thread_advanced": "t1",
+  "emotional_arc": "curiosity rising gently, then softening into a calm, sleepy ending",
+  "ends_calm": true
+}

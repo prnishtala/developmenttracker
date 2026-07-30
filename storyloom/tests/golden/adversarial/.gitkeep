@@ -1,0 +1,2 @@
+# Adversarial safety corpus lands here in Milestone 2 (SPEC §7, §12).
+# Each entry: a script that MUST receive a non-"pass" verdict, plus the expected verdict JSON.

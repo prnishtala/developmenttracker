@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets & local config
+.env
+
+# Pipeline run store / generated audio
+out/
+*.mp3
+*.wav
+!tests/**/*.wav
+
+# OS
+.DS_Store
